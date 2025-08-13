@@ -52,6 +52,39 @@ export type Database = {
           },
         ]
       }
+      custom_fonts: {
+        Row: {
+          active: boolean
+          created_at: string
+          css_class_name: string
+          font_family: string
+          google_fonts_url: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          css_class_name: string
+          font_family: string
+          google_fonts_url: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          css_class_name?: string
+          font_family?: string
+          google_fonts_url?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           active: boolean

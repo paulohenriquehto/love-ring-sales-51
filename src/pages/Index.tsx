@@ -8,6 +8,7 @@ import { Cart } from "@/components/Cart";
 import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { useFonts } from "@/hooks/useFonts";
 import { type EngravingCustomization, type EngravingConfig } from "@/types/engraving";
 
 // Interfaces para os dados do Supabase
@@ -109,6 +110,7 @@ interface CartItem {
 
 const Index = () => {
   const { profile } = useAuth();
+  const { fonts, loading: fontsLoading } = useFonts();
   
   // Estados para dados do Supabase
   const [products, setProducts] = useState<SupabaseProduct[]>([]);

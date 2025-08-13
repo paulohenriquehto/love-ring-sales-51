@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { FontManager } from "@/components/fonts/FontManager";
 import { 
   User, 
   Shield, 
@@ -223,6 +224,11 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Font Management Section - Only for admins and managers */}
+      {(profile.role === 'admin' || profile.role === 'manager') && (
+        <FontManager />
+      )}
 
       {/* Security Section */}
       <Card>
