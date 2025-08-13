@@ -1,4 +1,5 @@
-import { FONT_OPTIONS, type FontValue } from "@/types/engraving";
+import { useFonts } from "@/contexts/FontContext";
+import { type FontValue } from "@/types/engraving";
 
 interface EngravingPreviewProps {
   text: string;
@@ -6,7 +7,8 @@ interface EngravingPreviewProps {
 }
 
 export function EngravingPreview({ text, font }: EngravingPreviewProps) {
-  const fontConfig = FONT_OPTIONS.find(f => f.value === font);
+  const { fontOptions } = useFonts();
+  const fontConfig = fontOptions.find(f => f.value === font);
   
   return (
     <div className="bg-card border border-border rounded-lg p-6 min-h-[120px] flex items-center justify-center">

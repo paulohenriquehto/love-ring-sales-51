@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FONT_OPTIONS, type FontValue } from "@/types/engraving";
+import { useFonts } from "@/contexts/FontContext";
+import { type FontValue } from "@/types/engraving";
 
 interface FontSelectorProps {
   value: FontValue;
@@ -8,9 +9,11 @@ interface FontSelectorProps {
 }
 
 export function FontSelector({ value, onChange, availableFonts = [] }: FontSelectorProps) {
+  const { fontOptions } = useFonts();
+  
   const filteredFonts = availableFonts.length > 0 
-    ? FONT_OPTIONS.filter(font => availableFonts.includes(font.value))
-    : FONT_OPTIONS;
+    ? fontOptions.filter(font => availableFonts.includes(font.value))
+    : fontOptions;
 
   return (
     <div className="space-y-2">

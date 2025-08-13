@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FONT_OPTIONS } from "@/types/engraving";
+import { FontOption } from "@/types/engraving";
 
 interface CustomFont {
   id: string;
@@ -11,8 +11,24 @@ interface CustomFont {
   active: boolean;
 }
 
-export function useFonts() {
-  const [fonts, setFonts] = useState<CustomFont[]>([]);
+interface FontContextType {
+  fontOptions: FontOption[];
+  loading: boolean;
+  reloadFonts: () => Promise<void>;
+}
+
+const FontContext = createContext<FontContextType | undefined>(undefined);
+
+export const useFonts = () => {
+  const context = useContext(FontContext);
+  if (context === undefined) {
+    throw new Error('useFonts must be used within a FontProvider');
+  }
+  return context;
+};
+
+export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [fontOptions, setFontOptions] = useState<FontOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadFonts = async () => {
@@ -25,15 +41,13 @@ export function useFonts() {
 
       if (error) throw error;
       
-      setFonts(data || []);
-      
-      // Update FONT_OPTIONS globally
-      FONT_OPTIONS.length = 0;
-      FONT_OPTIONS.push(...(data || []).map(font => ({
+      const options: FontOption[] = (data || []).map(font => ({
         value: font.css_class_name.replace('font-', ''),
         label: font.name,
         className: font.css_class_name
-      })));
+      }));
+
+      setFontOptions(options);
 
       // Load Google Fonts dynamically
       data?.forEach(font => {
@@ -59,5 +73,9 @@ export function useFonts() {
     loadFonts();
   }, []);
 
-  return { fonts, loading, reloadFonts: loadFonts };
-}
+  return (
+    <FontContext.Provider value={{ fontOptions, loading, reloadFonts: loadFonts }}>
+      {children}
+    </FontContext.Provider>
+  );
+};

@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { FontProvider } from "./contexts/FontContext";
 import { Toaster } from "./components/ui/toaster";
 import AppLayout from "./components/AppLayout";
 import "./index.css";
@@ -20,8 +21,9 @@ import NotFound from "./pages/NotFound.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <Router>
+    <FontProvider>
+      <AuthProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<AppLayout><Index /></AppLayout>} />
           <Route path="/auth" element={<Auth />} />
@@ -38,5 +40,6 @@ createRoot(document.getElementById("root")!).render(
         <Toaster />
       </Router>
     </AuthProvider>
+  </FontProvider>
   </React.StrictMode>
 );
