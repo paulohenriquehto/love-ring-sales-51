@@ -117,6 +117,15 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'shimmer': 'shimmer 2s ease-in-out infinite',
 				'float': 'float 3s ease-in-out infinite'
+			},
+			fontFamily: {
+				'poiret': ['Poiret One', 'sans-serif'],
+				'josefin': ['Josefin Sans', 'sans-serif'],
+				'cinzel': ['Cinzel', 'serif'],
+				'handlee': ['Handlee', 'cursive'],
+				'tangerine': ['Tangerine', 'cursive'],
+				'reenie': ['Reenie Beanie', 'cursive'],
+				'annie': ['Annie Use Your Telescope', 'cursive']
 			}
 		}
 	},
