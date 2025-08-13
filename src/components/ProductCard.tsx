@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Heart } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShoppingCart, Heart, Paintbrush } from "lucide-react";
 import { useState } from "react";
+import { EngravingCustomizer } from "@/components/engraving/EngravingCustomizer";
+import { type EngravingCustomization, type EngravingConfig } from "@/types/engraving";
 
 interface Product {
   id: string;
@@ -19,7 +22,8 @@ interface Product {
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product, size: string, width?: string) => void;
+  onAddToCart: (product: Product, size: string, width?: string, engraving?: EngravingCustomization) => void;
+  engravingConfig?: EngravingConfig;
 }
 
 const materialColors = {
@@ -35,10 +39,12 @@ const stockColors = {
   out: "bg-red-500"
 };
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "");
   const [selectedWidth, setSelectedWidth] = useState<string>(product.widths?.[0] || "");
   const [isHovered, setIsHovered] = useState(false);
+  const [isEngravingOpen, setIsEngravingOpen] = useState(false);
+  const [pendingEngraving, setPendingEngraving] = useState<EngravingCustomization | undefined>();
 
   const getStockStatus = (stock: number) => {
     if (stock === 0) return "out";
@@ -183,18 +189,63 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </div>
         )}
 
+        {/* Engraving/Personalization Button */}
+        {engravingConfig?.supports_engraving && (
+          <Button
+            variant="outline"
+            className="w-full mb-3"
+            onClick={() => setIsEngravingOpen(true)}
+          >
+            <Paintbrush className="h-4 w-4 mr-2" />
+            {pendingEngraving ? 'Editar Gravação' : 'Personalizar'}
+          </Button>
+        )}
+
+        {/* Engraving Preview */}
+        {pendingEngraving && (
+          <div className="mb-3 p-3 bg-muted/50 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground mb-1">Gravação:</p>
+            <p className="text-sm font-medium text-foreground">"{pendingEngraving.text}"</p>
+            <p className="text-xs text-muted-foreground">Fonte: {pendingEngraving.font}</p>
+          </div>
+        )}
+
         {/* Add to Cart Button */}
         <Button
           className="w-full"
           variant={product.stock === 0 ? "outline" : "default"}
           size="tablet"
           disabled={product.stock === 0 || !selectedSize || (product.widths && product.widths.length > 0 && !selectedWidth)}
-          onClick={() => selectedSize && onAddToCart(product, selectedSize, selectedWidth)}
+          onClick={() => {
+            if (selectedSize) {
+              onAddToCart(product, selectedSize, selectedWidth, pendingEngraving);
+            }
+          }}
         >
           <ShoppingCart className="h-5 w-5 mr-2" />
           {product.stock === 0 ? 'Indisponível' : 'Adicionar ao Carrinho'}
         </Button>
       </div>
+
+      {/* Engraving Dialog */}
+      {engravingConfig && (
+        <Dialog open={isEngravingOpen} onOpenChange={setIsEngravingOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Personalização</DialogTitle>
+            </DialogHeader>
+            <EngravingCustomizer
+              config={engravingConfig}
+              productId={product.id}
+              onConfirm={(customization) => {
+                setPendingEngraving(customization);
+                setIsEngravingOpen(false);
+              }}
+              onCancel={() => setIsEngravingOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

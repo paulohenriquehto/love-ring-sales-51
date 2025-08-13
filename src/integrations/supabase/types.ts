@@ -185,6 +185,39 @@ export type Database = {
         }
         Relationships: []
       }
+      product_engraving_config: {
+        Row: {
+          available_fonts: string[] | null
+          created_at: string
+          id: string
+          max_characters: number
+          price_adjustment: number | null
+          product_id: string
+          supports_engraving: boolean
+          updated_at: string
+        }
+        Insert: {
+          available_fonts?: string[] | null
+          created_at?: string
+          id?: string
+          max_characters?: number
+          price_adjustment?: number | null
+          product_id: string
+          supports_engraving?: boolean
+          updated_at?: string
+        }
+        Update: {
+          available_fonts?: string[] | null
+          created_at?: string
+          id?: string
+          max_characters?: number
+          price_adjustment?: number | null
+          product_id?: string
+          supports_engraving?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           alt_text: string | null

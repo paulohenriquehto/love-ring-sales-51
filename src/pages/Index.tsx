@@ -8,6 +8,7 @@ import { Cart } from "@/components/Cart";
 import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { type EngravingCustomization, type EngravingConfig } from "@/types/engraving";
 
 // Interfaces para os dados do Supabase
 interface Category {
@@ -103,6 +104,7 @@ interface CartItem {
   width?: string;
   quantity: number;
   variant_id?: string;
+  engraving?: EngravingCustomization;
 }
 
 const Index = () => {
@@ -112,6 +114,7 @@ const Index = () => {
   const [products, setProducts] = useState<SupabaseProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [engravingConfigs, setEngravingConfigs] = useState<EngravingConfig[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Estados do carrinho e filtros
@@ -177,9 +180,18 @@ const Index = () => {
 
       if (materialsError) throw materialsError;
 
+      // Buscar configurações de gravação
+      const { data: engravingData, error: engravingError } = await supabase
+        .from("product_engraving_config")
+        .select("*")
+        .eq("supports_engraving", true);
+
+      if (engravingError) throw engravingError;
+
       setProducts(productsData || []);
       setCategories(categoriesData || []);
       setMaterials(materialsData || []);
+      setEngravingConfigs(engravingData || []);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -269,10 +281,13 @@ const Index = () => {
   const cartItemsCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
 
-  const handleAddToCart = (product: any, size: string, width?: string) => {
+  const handleAddToCart = (product: any, size: string, width?: string, engraving?: EngravingCustomization) => {
     // Para compatibilidade com o ProductCard existente, tratamos product como um produto transformado
     const existingItemIndex = cartItems.findIndex(
-      item => item.id === product.id && item.size === size && item.width === width
+      item => item.id === product.id && 
+              item.size === size && 
+              item.width === width &&
+              JSON.stringify(item.engraving) === JSON.stringify(engraving)
     );
 
     if (existingItemIndex >= 0) {
@@ -288,15 +303,17 @@ const Index = () => {
         material: product.material,
         size: size,
         width: width,
-        quantity: 1
+        quantity: 1,
+        engraving: engraving
       };
       setCartItems([...cartItems, newItem]);
     }
 
     const widthText = width ? ` • Largura ${width}` : '';
+    const engravingText = engraving ? ` • Gravação: "${engraving.text}"` : '';
     toast({
       title: "Produto adicionado!",
-      description: `${product.name} (Tamanho ${size}${widthText}) foi adicionado ao carrinho.`,
+      description: `${product.name} (Tamanho ${size}${widthText}${engravingText}) foi adicionado ao carrinho.`,
     });
   };
 
@@ -405,13 +422,18 @@ const Index = () => {
 
           {/* Product Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {displayProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
+            {displayProducts.map((product) => {
+              const engravingConfig = engravingConfigs.find(config => config.product_id === product.id);
+              
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  engravingConfig={engravingConfig}
+                />
+              );
+            })}
           </div>
 
           {/* Empty State */}

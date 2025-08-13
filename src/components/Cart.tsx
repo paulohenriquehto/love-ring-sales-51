@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { X, Minus, Plus, ShoppingBag, CreditCard, Smartphone } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, CreditCard, Smartphone, Paintbrush } from "lucide-react";
 import { useState } from "react";
+import { type EngravingCustomization } from "@/types/engraving";
 
 interface CartItem {
   id: string;
@@ -14,6 +15,7 @@ interface CartItem {
   size: string;
   width?: string;
   quantity: number;
+  engraving?: EngravingCustomization;
 }
 
 interface CartProps {
@@ -92,6 +94,18 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
+
+                      {/* Engraving Details */}
+                      {item.engraving && (
+                        <div className="bg-muted/50 rounded-lg p-2 border-l-2 border-primary">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Paintbrush className="h-3 w-3 text-primary" />
+                            <span className="text-xs font-medium text-primary">Gravação Personalizada</span>
+                          </div>
+                          <p className="text-sm text-foreground font-medium">"{item.engraving.text}"</p>
+                          <p className="text-xs text-muted-foreground">Fonte: {item.engraving.font}</p>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
