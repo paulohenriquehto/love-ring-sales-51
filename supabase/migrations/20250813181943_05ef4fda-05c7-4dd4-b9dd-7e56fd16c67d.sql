@@ -1,0 +1,98 @@
+-- Criar tabela de departamentos
+CREATE TABLE public.departments (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  manager_user_id UUID,
+  budget_limit DECIMAL(10,2),
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Habilitar RLS na tabela departments
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+
+-- Atualizar tabela profiles - remover store_id e adicionar campos do sistema corporativo
+ALTER TABLE public.profiles 
+  DROP COLUMN IF EXISTS store_id,
+  ADD COLUMN department_id UUID REFERENCES public.departments(id),
+  ADD COLUMN position TEXT,
+  ADD COLUMN budget_limit DECIMAL(10,2);
+
+-- Criar enum para níveis de acesso
+CREATE TYPE public.access_level AS ENUM ('user', 'manager', 'admin');
+
+-- Primeiramente atualizar todos os valores existentes de 'vendedora' para 'user'
+UPDATE public.profiles SET role = 'user' WHERE role = 'vendedora';
+
+-- Remover valor padrão antes de alterar o tipo
+ALTER TABLE public.profiles ALTER COLUMN role DROP DEFAULT;
+
+-- Atualizar campo role na tabela profiles para usar enum
+ALTER TABLE public.profiles 
+  ALTER COLUMN role TYPE public.access_level USING role::public.access_level;
+
+-- Definir novo valor padrão
+ALTER TABLE public.profiles 
+  ALTER COLUMN role SET DEFAULT 'user'::public.access_level;
+
+-- Políticas RLS básicas para departments
+CREATE POLICY "Everyone can view departments" 
+  ON public.departments 
+  FOR SELECT 
+  USING (true);
+
+-- Atualizar políticas da tabela profiles
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+
+-- Políticas básicas para profiles
+CREATE POLICY "Users can view their own profile" 
+  ON public.profiles 
+  FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own profile" 
+  ON public.profiles 
+  FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own profile" 
+  ON public.profiles 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+-- Atualizar função handle_new_user para usar novo esquema
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+BEGIN
+  INSERT INTO public.profiles (user_id, full_name, role, department_id)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE((NEW.raw_user_meta_data->>'role')::public.access_level, 'user'::public.access_level),
+    (NEW.raw_user_meta_data->>'department_id')::uuid
+  );
+  RETURN NEW;
+END;
+$function$;
+
+-- Adicionar trigger para atualizar updated_at nos departamentos
+CREATE TRIGGER update_departments_updated_at
+  BEFORE UPDATE ON public.departments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Inserir departamentos padrão
+INSERT INTO public.departments (name, description, active) VALUES
+  ('Tecnologia da Informação', 'Departamento responsável pela infraestrutura e desenvolvimento de sistemas', true),
+  ('Recursos Humanos', 'Departamento responsável pela gestão de pessoas e talentos', true),
+  ('Financeiro', 'Departamento responsável pela gestão financeira e contábil', true),
+  ('Operações', 'Departamento responsável pelas operações e processos internos', true),
+  ('Compras', 'Departamento responsável pelas aquisições e suprimentos', true);
