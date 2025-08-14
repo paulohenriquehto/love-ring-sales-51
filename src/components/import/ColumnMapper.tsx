@@ -208,7 +208,7 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
   const handleMappingChange = (csvColumn: string, targetField: string | null) => {
     setMapping(prev => ({
       ...prev,
-      [csvColumn]: targetField,
+      [csvColumn]: targetField === 'none' ? null : targetField,
     }));
   };
 
@@ -316,14 +316,14 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
                       <ArrowRight className="w-4 h-4 text-muted-foreground" />
                       <div className="w-48">
                         <Select
-                          value={mapping[header] || ''}
+                          value={mapping[header] || 'none'}
                           onValueChange={(value) => handleMappingChange(header, value || null)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecionar campo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Não mapear</SelectItem>
+                            <SelectItem value="none">Não mapear</SelectItem>
                             <SelectItem value="ignore">Ignorar</SelectItem>
                             <Separator />
                             {Object.entries(MAPPING_OPTIONS).map(([key, label]) => {
