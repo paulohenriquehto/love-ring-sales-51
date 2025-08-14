@@ -28,9 +28,9 @@ interface ProductCardProps {
 }
 
 const materialColors = {
-  ouro: "bg-gradient-gold text-white",
-  prata: "bg-luxury-platinum text-luxury-dark",
-  titanio: "bg-gradient-elegant text-white",
+  ouro: "bg-[hsl(var(--luxury-gold))] text-white",
+  prata: "bg-[hsl(var(--luxury-platinum))] text-[hsl(var(--luxury-dark))]",
+  titanio: "bg-[hsl(var(--accent))] text-white",
   aco: "bg-muted text-muted-foreground"
 };
 
@@ -68,7 +68,7 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
 
   return (
     <Card 
-      className="group relative overflow-hidden bg-gradient-subtle border-border/50 shadow-card hover:shadow-luxury transition-all duration-500 transform sm:hover:-translate-y-1"
+      className="group relative overflow-hidden bg-card border-border/50 shadow-card hover:shadow-luxury transition-all duration-500 transform sm:hover:-translate-y-1"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -93,7 +93,7 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         />
         
         {/* Overlay on hover */}
-        <div className={`absolute inset-0 bg-gradient-elegant/20 transition-opacity duration-300 ${
+        <div className={`absolute inset-0 bg-[hsl(var(--accent))]/20 transition-opacity duration-300 ${
           isHovered ? 'opacity-100' : 'opacity-0'
         }`} />
 
@@ -101,7 +101,7 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         <Button
           size="icon"
           variant="ghost"
-          className={`absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 hover:bg-white text-luxury-dark transition-all duration-300 h-7 w-7 sm:h-8 sm:w-8 ${
+          className={`absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 hover:bg-white text-[hsl(var(--luxury-dark))] transition-all duration-300 h-7 w-7 sm:h-8 sm:w-8 ${
             isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
@@ -151,14 +151,14 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         {product.sizes.length > 0 && (
           <div className="space-y-2">
             <label className="text-xs sm:text-sm font-medium text-foreground">Tamanho:</label>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               {product.sizes.map((size) => (
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] sm:min-h-auto ${
+                  className={`px-2.5 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] ${
                     selectedSize === size
-                      ? 'bg-primary text-white shadow-luxury'
+                      ? 'bg-primary text-primary-foreground shadow-md'
                       : 'bg-muted text-muted-foreground hover:bg-primary/20 active:bg-primary/30'
                   }`}
                 >
@@ -173,14 +173,14 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         {product.widths && product.widths.length > 0 && (
           <div className="space-y-2">
             <label className="text-xs sm:text-sm font-medium text-foreground">Largura:</label>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               {product.widths.map((width) => (
                 <button
                   key={width}
                   onClick={() => setSelectedWidth(width)}
-                  className={`px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] sm:min-h-auto ${
+                  className={`px-2.5 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] ${
                     selectedWidth === width
-                      ? 'bg-primary text-white shadow-luxury'
+                      ? 'bg-primary text-primary-foreground shadow-md'
                       : 'bg-muted text-muted-foreground hover:bg-primary/20 active:bg-primary/30'
                   }`}
                 >
@@ -205,7 +205,7 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
 
         {/* Engraving Preview */}
         {pendingEngraving && (
-          <div className="mb-3 p-3 bg-gradient-subtle border border-primary/20 rounded-lg">
+          <div className="mb-3 p-3 bg-card border border-primary/20 rounded-lg">
           <EngravingDisplay
             text={pendingEngraving.text}
             font={pendingEngraving.font}
