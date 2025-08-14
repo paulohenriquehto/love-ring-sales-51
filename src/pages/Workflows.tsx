@@ -1,487 +1,350 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useWorkflowData } from '@/hooks/useWorkflowData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
-  GitBranch,
-  Play,
-  Pause,
-  Plus,
-  Settings,
-  Clock,
-  CheckCircle,
-  XCircle,
+  Play, 
+  Pause, 
+  Plus, 
+  Settings, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
   AlertCircle,
-  User,
-  Calendar,
-  MoreVertical,
-  Filter,
-  Search,
-  ArrowRight
+  Workflow,
+  Activity,
+  BarChart3,
+  Loader2,
+  Edit
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
-
-interface Workflow {
-  id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'draft';
-  trigger_type: 'manual' | 'automatic' | 'scheduled';
-  created_by: string;
-  created_at: string;
-  steps: WorkflowStep[];
-  executions_count: number;
-  success_rate: number;
-}
-
-interface WorkflowStep {
-  id: string;
-  name: string;
-  type: 'approval' | 'notification' | 'action' | 'condition';
-  order: number;
-  config: any;
-  assignee?: string;
-}
-
-interface WorkflowExecution {
-  id: string;
-  workflow_id: string;
-  workflow_name: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
-  current_step: number;
-  total_steps: number;
-  started_by: string;
-  started_at: string;
-  completed_at?: string;
-  data: any;
-}
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Workflows = () => {
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedTab, setSelectedTab] = useState('workflows');
-  const { toast } = useToast();
-  const { profile } = useAuth();
-
-  useEffect(() => {
-    loadWorkflows();
-    loadExecutions();
-  }, []);
-
-  const loadWorkflows = async () => {
-    try {
-      setLoading(true);
-      
-      // Simulated workflows data - in production this would come from workflows table
-      const mockWorkflows: Workflow[] = [
-        {
-          id: '1',
-          name: 'Aprovação de Requisições',
-          description: 'Fluxo de aprovação para requisições de materiais',
-          status: 'active',
-          trigger_type: 'automatic',
-          created_by: 'admin',
-          created_at: new Date().toISOString(),
-          steps: [
-            { id: 's1', name: 'Análise Inicial', type: 'approval', order: 1, config: {}, assignee: 'manager' },
-            { id: 's2', name: 'Verificação de Orçamento', type: 'condition', order: 2, config: {} },
-            { id: 's3', name: 'Aprovação Final', type: 'approval', order: 3, config: {}, assignee: 'admin' },
-            { id: 's4', name: 'Notificação', type: 'notification', order: 4, config: {} }
-          ],
-          executions_count: 45,
-          success_rate: 91.1
-        },
-        {
-          id: '2',
-          name: 'Onboarding de Usuários',
-          description: 'Processo automatizado de integração de novos usuários',
-          status: 'active',
-          trigger_type: 'automatic',
-          created_by: 'admin',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          steps: [
-            { id: 's5', name: 'Criação de Perfil', type: 'action', order: 1, config: {} },
-            { id: 's6', name: 'Envio de Credenciais', type: 'notification', order: 2, config: {} },
-            { id: 's7', name: 'Treinamento', type: 'action', order: 3, config: {} }
-          ],
-          executions_count: 12,
-          success_rate: 100
-        },
-        {
-          id: '3',
-          name: 'Processamento de Pedidos',
-          description: 'Automação do fluxo de processamento de pedidos',
-          status: 'active',
-          trigger_type: 'automatic',
-          created_by: 'manager',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          steps: [
-            { id: 's8', name: 'Validação', type: 'condition', order: 1, config: {} },
-            { id: 's9', name: 'Reserva de Estoque', type: 'action', order: 2, config: {} },
-            { id: 's10', name: 'Cobrança', type: 'action', order: 3, config: {} },
-            { id: 's11', name: 'Confirmação', type: 'notification', order: 4, config: {} }
-          ],
-          executions_count: 234,
-          success_rate: 97.4
-        },
-        {
-          id: '4',
-          name: 'Backup Diário',
-          description: 'Processo automatizado de backup dos dados',
-          status: 'active',
-          trigger_type: 'scheduled',
-          created_by: 'admin',
-          created_at: new Date(Date.now() - 259200000).toISOString(),
-          steps: [
-            { id: 's12', name: 'Backup Database', type: 'action', order: 1, config: {} },
-            { id: 's13', name: 'Backup Files', type: 'action', order: 2, config: {} },
-            { id: 's14', name: 'Verificação', type: 'condition', order: 3, config: {} },
-            { id: 's15', name: 'Relatório', type: 'notification', order: 4, config: {} }
-          ],
-          executions_count: 30,
-          success_rate: 96.7
-        }
-      ];
-
-      setWorkflows(mockWorkflows);
-    } catch (error) {
-      console.error('Error loading workflows:', error);
-      toast({
-        title: "Erro ao carregar workflows",
-        description: "Não foi possível carregar os workflows",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadExecutions = async () => {
-    try {
-      // Simulated executions data
-      const mockExecutions: WorkflowExecution[] = [
-        {
-          id: 'exec1',
-          workflow_id: '1',
-          workflow_name: 'Aprovação de Requisições',
-          status: 'in_progress',
-          current_step: 2,
-          total_steps: 4,
-          started_by: 'João Silva',
-          started_at: new Date().toISOString(),
-          data: { request_id: 'req123', amount: 5000 }
-        },
-        {
-          id: 'exec2',
-          workflow_id: '3',
-          workflow_name: 'Processamento de Pedidos',
-          status: 'completed',
-          current_step: 4,
-          total_steps: 4,
-          started_by: 'Maria Santos',
-          started_at: new Date(Date.now() - 3600000).toISOString(),
-          completed_at: new Date(Date.now() - 1800000).toISOString(),
-          data: { order_id: 'ord456', total: 1200 }
-        },
-        {
-          id: 'exec3',
-          workflow_id: '2',
-          workflow_name: 'Onboarding de Usuários',
-          status: 'pending',
-          current_step: 1,
-          total_steps: 3,
-          started_by: 'Carlos Oliveira',
-          started_at: new Date(Date.now() - 7200000).toISOString(),
-          data: { user_id: 'user789', email: 'novo@empresa.com' }
-        },
-        {
-          id: 'exec4',
-          workflow_id: '4',
-          workflow_name: 'Backup Diário',
-          status: 'completed',
-          current_step: 4,
-          total_steps: 4,
-          started_by: 'Sistema',
-          started_at: new Date(Date.now() - 86400000).toISOString(),
-          completed_at: new Date(Date.now() - 86100000).toISOString(),
-          data: { backup_size: '2.3GB', status: 'success' }
-        },
-        {
-          id: 'exec5',
-          workflow_id: '1',
-          workflow_name: 'Aprovação de Requisições',
-          status: 'failed',
-          current_step: 3,
-          total_steps: 4,
-          started_by: 'Ana Costa',
-          started_at: new Date(Date.now() - 10800000).toISOString(),
-          data: { request_id: 'req124', error: 'Orçamento insuficiente' }
-        }
-      ];
-
-      setExecutions(mockExecutions);
-    } catch (error) {
-      console.error('Error loading executions:', error);
-    }
-  };
-
-  const filteredWorkflows = workflows.filter(workflow => {
-    const matchesSearch = workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         workflow.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || workflow.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const { workflows, executions, workflowStats, isLoading, createWorkflow, executeWorkflow, updateWorkflowStatus } = useWorkflowData();
+  
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newWorkflow, setNewWorkflow] = useState({
+    name: '',
+    description: '',
+    trigger_type: 'manual',
+    steps: []
   });
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'draft': return 'outline';
-      case 'completed': return 'default';
-      case 'in_progress': return 'default';
-      case 'pending': return 'secondary';
-      case 'failed': return 'destructive';
-      case 'cancelled': return 'outline';
-      default: return 'secondary';
+      case 'active':
+        return 'default';
+      case 'inactive':
+        return 'secondary';
+      case 'completed':
+        return 'default';
+      case 'running':
+        return 'secondary';
+      case 'failed':
+        return 'destructive';
+      case 'pending':
+        return 'outline';
+      default:
+        return 'outline';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return CheckCircle;
-      case 'in_progress': return Clock;
-      case 'pending': return AlertCircle;
-      case 'failed': return XCircle;
-      case 'cancelled': return XCircle;
-      default: return Clock;
+      case 'active':
+      case 'completed':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'running':
+      case 'pending':
+        return <Clock className="h-4 w-4" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
     }
   };
 
-  const getTriggerIcon = (type: string) => {
-    switch (type) {
-      case 'manual': return User;
-      case 'scheduled': return Calendar;
-      default: return GitBranch;
+  const handleCreateWorkflow = async () => {
+    if (!newWorkflow.name.trim()) return;
+    
+    try {
+      await createWorkflow.mutateAsync({
+        ...newWorkflow,
+        steps: [
+          {
+            id: '1',
+            name: 'Início',
+            type: 'start',
+            config: {}
+          }
+        ]
+      });
+      setIsCreateDialogOpen(false);
+      setNewWorkflow({
+        name: '',
+        description: '',
+        trigger_type: 'manual',
+        steps: []
+      });
+    } catch (error) {
+      console.error('Error creating workflow:', error);
     }
   };
 
-  const createNewWorkflow = () => {
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "O designer de workflows estará disponível em breve",
-    });
+  const handleExecuteWorkflow = async (workflowId: string) => {
+    try {
+      await executeWorkflow.mutateAsync(workflowId);
+    } catch (error) {
+      console.error('Error executing workflow:', error);
+    }
   };
 
-  if (loading) {
+  const handleToggleWorkflow = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await updateWorkflowStatus.mutateAsync({ id, status: newStatus });
+    } catch (error) {
+      console.error('Error updating workflow status:', error);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <GitBranch className="w-12 h-12 animate-pulse mx-auto mb-4 text-primary" />
-            <p className="text-lg font-medium">Carregando workflows...</p>
-            <p className="text-sm text-muted-foreground">Analisando fluxos de trabalho</p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando workflows...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-start">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Workflows e Automação</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie fluxos de trabalho automatizados e aprovações
-          </p>
+          <h1 className="text-3xl font-bold">Workflows</h1>
+          <p className="text-muted-foreground">Automatização de processos empresariais</p>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={createNewWorkflow} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Workflow
-          </Button>
-        </div>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Workflow
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Novo Workflow</DialogTitle>
+              <DialogDescription>
+                Configure um novo processo automatizado
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  value={newWorkflow.name}
+                  onChange={(e) => setNewWorkflow(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nome do workflow"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={newWorkflow.description}
+                  onChange={(e) => setNewWorkflow(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descreva o que este workflow faz"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="trigger">Tipo de Gatilho</Label>
+                <Select 
+                  value={newWorkflow.trigger_type} 
+                  onValueChange={(value) => setNewWorkflow(prev => ({ ...prev, trigger_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o gatilho" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="schedule">Agendado</SelectItem>
+                    <SelectItem value="webhook">Webhook</SelectItem>
+                    <SelectItem value="event">Evento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCreateWorkflow}
+                disabled={!newWorkflow.name.trim() || createWorkflow.isPending}
+              >
+                {createWorkflow.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                Criar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Workflows Ativos</p>
-                <p className="text-2xl font-bold">
-                  {workflows.filter(w => w.status === 'active').length}
-                </p>
-              </div>
-              <GitBranch className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Execuções Hoje</p>
-                <p className="text-2xl font-bold">
-                  {executions.filter(e => 
-                    new Date(e.started_at).toDateString() === new Date().toDateString()
-                  ).length}
-                </p>
-              </div>
-              <Play className="w-8 h-8 text-blue-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Workflows</CardTitle>
+            <Workflow className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowStats?.totalWorkflows || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Processos configurados
+            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Em Andamento</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {executions.filter(e => e.status === 'in_progress' || e.status === 'pending').length}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-orange-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Workflows Ativos</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowStats?.activeWorkflows || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Em execução
+            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {((executions.filter(e => e.status === 'completed').length / executions.length) * 100).toFixed(1)}%
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Execuções (30d)</CardTitle>
+            <Activity className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{workflowStats?.totalExecutions || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Últimos 30 dias
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Taxa de Sucesso</CardTitle>
+            <BarChart3 className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{(workflowStats?.successRate || 0).toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              Execuções bem-sucedidas
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="workflows" className="space-y-6">
+        <TabsList>
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="executions">Execuções</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workflows" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitBranch className="w-5 h-5" />
-                Workflows Configurados
-              </CardTitle>
+              <CardTitle>Workflows Configurados</CardTitle>
               <CardDescription>
-                Gerencie e configure fluxos de trabalho automatizados
+                Gerencie e execute seus processos automatizados
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 mb-6">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="Buscar workflows..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filtrar por status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Trigger</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Gatilho</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Execuções</TableHead>
-                    <TableHead>Taxa de Sucesso</TableHead>
                     <TableHead>Criado em</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredWorkflows.map((workflow) => {
-                    const TriggerIcon = getTriggerIcon(workflow.trigger_type);
-                    return (
-                      <TableRow key={workflow.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{workflow.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {workflow.description}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <TriggerIcon className="w-4 h-4" />
-                            {workflow.trigger_type}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(workflow.status)}>
-                            {workflow.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{workflow.executions_count}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={workflow.success_rate} className="w-16 h-2" />
-                            <span className="text-sm">
-                              {workflow.success_rate.toFixed(1)}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(workflow.created_at), 'dd/MM/yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Settings className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {workflows.map((workflow) => (
+                    <TableRow key={workflow.id}>
+                      <TableCell className="font-medium">{workflow.name}</TableCell>
+                      <TableCell>{workflow.description || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{workflow.trigger_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(workflow.status)} className="flex items-center gap-1 w-fit">
+                          {getStatusIcon(workflow.status)}
+                          {workflow.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {format(parseISO(workflow.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleExecuteWorkflow(workflow.id)}
+                            disabled={workflow.status !== 'active' || executeWorkflow.isPending}
+                          >
+                            {executeWorkflow.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggleWorkflow(workflow.id, workflow.status)}
+                            disabled={updateWorkflowStatus.isPending}
+                          >
+                            {workflow.status === 'active' ? (
+                              <Pause className="h-4 w-4" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
+              {workflows.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum workflow configurado. Crie seu primeiro workflow!
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -489,12 +352,9 @@ const Workflows = () => {
         <TabsContent value="executions" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Execuções de Workflows
-              </CardTitle>
+              <CardTitle>Histórico de Execuções</CardTitle>
               <CardDescription>
-                Acompanhe o progresso das execuções em tempo real
+                Acompanhe o histórico de execução dos workflows
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -502,72 +362,132 @@ const Workflows = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Workflow</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Progresso</TableHead>
-                    <TableHead>Iniciado por</TableHead>
                     <TableHead>Iniciado em</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Duração</TableHead>
+                    <TableHead>Etapa Atual</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {executions.map((execution) => {
-                    const StatusIcon = getStatusIcon(execution.status);
-                    const progress = (execution.current_step / execution.total_steps) * 100;
-                    
-                    return (
-                      <TableRow key={execution.id}>
-                        <TableCell className="font-medium">
-                          {execution.workflow_name}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <StatusIcon className={`w-4 h-4 ${
-                              execution.status === 'completed' ? 'text-green-500' :
-                              execution.status === 'failed' ? 'text-red-500' :
-                              execution.status === 'in_progress' ? 'text-blue-500' : 'text-orange-500'
-                            }`} />
-                            <Badge variant={getStatusBadgeVariant(execution.status)}>
-                              {execution.status}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Progress value={progress} className="flex-1 h-2" />
-                              <span className="text-sm text-muted-foreground">
-                                {execution.current_step}/{execution.total_steps}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {progress.toFixed(0)}% concluído
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{execution.started_by}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(execution.started_at), 'dd/MM/yyyy HH:mm')}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {execution.completed_at ? (
-                            `${Math.round((new Date(execution.completed_at).getTime() - new Date(execution.started_at).getTime()) / 60000)}min`
-                          ) : (
-                            `${Math.round((Date.now() - new Date(execution.started_at).getTime()) / 60000)}min`
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            <ArrowRight className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {executions.map((execution) => (
+                    <TableRow key={execution.id}>
+                      <TableCell className="font-medium">
+                        {execution.workflows?.name || 'Workflow removido'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {format(parseISO(execution.started_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(execution.status)} className="flex items-center gap-1 w-fit">
+                          {getStatusIcon(execution.status)}
+                          {execution.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {execution.completed_at ? 
+                          `${Math.round((new Date(execution.completed_at).getTime() - new Date(execution.started_at).getTime()) / 1000)}s` :
+                          'Em andamento'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {execution.current_step}/{execution.total_steps}
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
+              {executions.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma execução registrada
+                </div>
+              )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Aprovação de Requisições</CardTitle>
+                <CardDescription>
+                  Automatiza o processo de aprovação de requisições
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    • Validação automática de orçamento
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Notificação para aprovadores
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Atualização de status automatizada
+                  </p>
+                </div>
+                <Button className="w-full mt-4" variant="outline">
+                  Usar Template
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Onboarding de Funcionários</CardTitle>
+                <CardDescription>
+                  Processo completo de integração de novos funcionários
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    • Criação de conta de usuário
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Atribuição de permissões
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Envio de documentação
+                  </p>
+                </div>
+                <Button className="w-full mt-4" variant="outline">
+                  Usar Template
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Relatório Mensal</CardTitle>
+                <CardDescription>
+                  Geração automática de relatórios mensais
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    • Coleta de dados automatizada
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Geração de relatórios
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    • Envio por email para gestores
+                  </p>
+                </div>
+                <Button className="w-full mt-4" variant="outline">
+                  Usar Template
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
