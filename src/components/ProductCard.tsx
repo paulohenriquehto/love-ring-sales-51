@@ -68,20 +68,20 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
 
   return (
     <Card 
-      className="group relative overflow-hidden bg-gradient-subtle border-border/50 shadow-card hover:shadow-luxury transition-all duration-500 transform hover:-translate-y-1"
+      className="group relative overflow-hidden bg-gradient-subtle border-border/50 shadow-card hover:shadow-luxury transition-all duration-500 transform sm:hover:-translate-y-1"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Discount Badge */}
       {hasDiscount && (
-        <Badge className="absolute top-3 left-3 z-10 bg-destructive text-white font-bold">
+        <Badge className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-destructive text-white font-bold text-xs">
           -{discountPercent}%
         </Badge>
       )}
 
       {/* Stock Indicator */}
-      <div className="absolute top-3 right-3 z-10">
-        <div className={`w-3 h-3 rounded-full ${stockColors[stockStatus]}`} />
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
+        <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${stockColors[stockStatus]}`} />
       </div>
 
       {/* Product Image */}
@@ -101,39 +101,39 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         <Button
           size="icon"
           variant="ghost"
-          className={`absolute top-4 right-4 bg-white/90 hover:bg-white text-luxury-dark transition-all duration-300 ${
+          className={`absolute top-3 right-3 sm:top-4 sm:right-4 bg-white/90 hover:bg-white text-luxury-dark transition-all duration-300 h-7 w-7 sm:h-8 sm:w-8 ${
             isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
-          <Heart className="h-4 w-4" />
+          <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
         </Button>
       </div>
 
       {/* Product Info */}
-      <div className="p-6 space-y-4">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
         {/* Material Badge */}
         <Badge className={`${materialColors[product.material]} text-xs font-semibold uppercase tracking-wide`}>
           {product.material}
         </Badge>
 
         {/* Product Name */}
-        <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+        <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-2">
           {product.name}
         </h3>
 
         {/* Price */}
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-primary">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xl sm:text-2xl font-bold text-primary">
               R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
             {hasDiscount && (
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-xs sm:text-sm text-muted-foreground line-through">
                 R$ {product.originalPrice!.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             ou 12x de R$ {(product.price / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
@@ -150,16 +150,16 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         {/* Size Selection */}
         {product.sizes.length > 0 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Tamanho:</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-xs sm:text-sm font-medium text-foreground">Tamanho:</label>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {product.sizes.map((size) => (
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] sm:min-h-auto ${
                     selectedSize === size
                       ? 'bg-primary text-white shadow-luxury'
-                      : 'bg-muted text-muted-foreground hover:bg-primary/20'
+                      : 'bg-muted text-muted-foreground hover:bg-primary/20 active:bg-primary/30'
                   }`}
                 >
                   {size}
@@ -172,16 +172,16 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         {/* Width Selection */}
         {product.widths && product.widths.length > 0 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Largura:</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-xs sm:text-sm font-medium text-foreground">Largura:</label>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {product.widths.map((width) => (
                 <button
                   key={width}
                   onClick={() => setSelectedWidth(width)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-all min-h-[44px] sm:min-h-auto ${
                     selectedWidth === width
                       ? 'bg-primary text-white shadow-luxury'
-                      : 'bg-muted text-muted-foreground hover:bg-primary/20'
+                      : 'bg-muted text-muted-foreground hover:bg-primary/20 active:bg-primary/30'
                   }`}
                 >
                   {width}
@@ -219,9 +219,9 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
 
         {/* Add to Cart Button */}
         <Button
-          className="w-full"
+          className="w-full min-h-[48px] sm:min-h-auto"
           variant={product.stock === 0 ? "outline" : "default"}
-          size="tablet"
+          size="sm"
           disabled={product.stock === 0 || !selectedSize || (product.widths && product.widths.length > 0 && !selectedWidth)}
           onClick={() => {
             if (selectedSize) {
@@ -234,15 +234,17 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
             }
           }}
         >
-          <ShoppingCart className="h-5 w-5 mr-2" />
-          {product.stock === 0 ? 'Indisponível' : 'Adicionar ao Carrinho'}
+          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+          <span className="text-xs sm:text-sm">
+            {product.stock === 0 ? 'Indisponível' : 'Adicionar ao Carrinho'}
+          </span>
         </Button>
       </div>
 
       {/* Engraving Dialog */}
       {engravingConfig && (
         <Dialog open={isEngravingOpen} onOpenChange={setIsEngravingOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Personalização</DialogTitle>
             </DialogHeader>

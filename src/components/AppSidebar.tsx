@@ -12,10 +12,12 @@ import {
   UserCheck,
   Award,
   Package,
-  Upload
+  Upload,
+  X
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   Sidebar,
@@ -62,11 +64,12 @@ const settingsItems = [
 ];
 
 export function AppSidebar() {
-  const { open } = useSidebar();
+  const { open, setOpen } = useSidebar();
   const collapsed = !open;
   const location = useLocation();
   const { profile } = useAuth();
   const [managementOpen, setManagementOpen] = useState(true);
+  const isMobile = useIsMobile();
   
   const currentPath = location.pathname;
   
@@ -113,11 +116,42 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"}>
-      <SidebarContent>
+    <Sidebar 
+      className={
+        isMobile 
+          ? collapsed 
+            ? "hidden" 
+            : "fixed inset-y-0 left-0 z-50 w-64 bg-background border-r shadow-lg"
+          : collapsed 
+            ? "w-14" 
+            : "w-64"
+      }
+    >
+      {/* Mobile overlay */}
+      {isMobile && open && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40" 
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
+      <SidebarContent className="relative z-50">
+        {/* Mobile close button */}
+        {isMobile && open && (
+          <div className="flex justify-end p-2 border-b">
+            <button
+              onClick={() => setOpen(false)}
+              className="p-2 hover:bg-accent rounded-md"
+              aria-label="Fechar menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         {/* User Info */}
-        {!collapsed && profile && (
-          <div className="p-4 border-b border-sidebar-border">
+        {(!collapsed || isMobile) && profile && (
+          <div className="p-3 sm:p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground text-sm font-medium">
@@ -150,10 +184,14 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClasses(isActive(item.url))}>
-                      <item.icon className="w-4 h-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                     <NavLink 
+                       to={item.url} 
+                       className={getNavClasses(isActive(item.url))}
+                       onClick={isMobile ? () => setOpen(false) : undefined}
+                     >
+                       <item.icon className="w-4 h-4" />
+                       {(!collapsed || isMobile) && <span>{item.title}</span>}
+                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -184,13 +222,14 @@ export function AppSidebar() {
                         .map((item) => (
                           <SidebarMenuSubItem key={item.title}>
                             <SidebarMenuSubButton asChild>
-                              <NavLink 
-                                to={item.url} 
-                                className={getNavClasses(isActive(item.url))}
-                              >
-                                <item.icon className="w-4 h-4" />
-                                {!collapsed && <span>{item.title}</span>}
-                              </NavLink>
+                               <NavLink 
+                                 to={item.url} 
+                                 className={getNavClasses(isActive(item.url))}
+                                 onClick={isMobile ? () => setOpen(false) : undefined}
+                               >
+                                 <item.icon className="w-4 h-4" />
+                                 {(!collapsed || isMobile) && <span>{item.title}</span>}
+                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -218,13 +257,14 @@ export function AppSidebar() {
                         .map((item) => (
                           <SidebarMenuSubItem key={item.title}>
                             <SidebarMenuSubButton asChild>
-                              <NavLink 
-                                to={item.url} 
-                                className={getNavClasses(isActive(item.url))}
-                              >
-                                <item.icon className="w-4 h-4" />
-                                {!collapsed && <span>{item.title}</span>}
-                              </NavLink>
+                               <NavLink 
+                                 to={item.url} 
+                                 className={getNavClasses(isActive(item.url))}
+                                 onClick={isMobile ? () => setOpen(false) : undefined}
+                               >
+                                 <item.icon className="w-4 h-4" />
+                                 {(!collapsed || isMobile) && <span>{item.title}</span>}
+                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -242,10 +282,14 @@ export function AppSidebar() {
               {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClasses(isActive(item.url))}>
-                      <item.icon className="w-4 h-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                     <NavLink 
+                       to={item.url} 
+                       className={getNavClasses(isActive(item.url))}
+                       onClick={isMobile ? () => setOpen(false) : undefined}
+                     >
+                       <item.icon className="w-4 h-4" />
+                       {(!collapsed || isMobile) && <span>{item.title}</span>}
+                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

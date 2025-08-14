@@ -44,12 +44,12 @@ export function FilterBar({
   const hasActiveFilters = selectedMaterial || selectedCategory || selectedPriceRange;
 
   return (
-    <div className="bg-background border-b border-border/50 py-4">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium text-foreground">Filtros:</span>
+    <div className="bg-background border-b border-border/50 py-3 sm:py-4">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+            <span className="text-sm sm:text-base font-medium text-foreground">Filtros:</span>
           </div>
           
           {hasActiveFilters && (
@@ -65,11 +65,11 @@ export function FilterBar({
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Materials */}
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Material:</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Material:</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {materials.map((material) => (
                 <Button
                   key={material.value}
@@ -78,7 +78,7 @@ export function FilterBar({
                   onClick={() => 
                     onMaterialChange(selectedMaterial === material.value ? null : material.value)
                   }
-                  className={selectedMaterial === material.value ? material.color : ""}
+                  className={`text-xs sm:text-sm min-h-[44px] sm:min-h-auto ${selectedMaterial === material.value ? material.color : ""}`}
                 >
                   {material.label}
                   {selectedMaterial === material.value && (
@@ -91,8 +91,8 @@ export function FilterBar({
 
           {/* Categories */}
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Categoria:</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Categoria:</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {categories.map((category) => (
                 <Button
                   key={category.value}
@@ -101,6 +101,7 @@ export function FilterBar({
                   onClick={() => 
                     onCategoryChange(selectedCategory === category.value ? null : category.value)
                   }
+                  className="text-xs sm:text-sm min-h-[44px] sm:min-h-auto"
                 >
                   {category.label}
                   {selectedCategory === category.value && (
@@ -113,8 +114,8 @@ export function FilterBar({
 
           {/* Price Ranges */}
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Preço:</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">Preço:</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {priceRanges.map((range) => (
                 <Button
                   key={range.value}
@@ -123,6 +124,7 @@ export function FilterBar({
                   onClick={() => 
                     onPriceRangeChange(selectedPriceRange === range.value ? null : range.value)
                   }
+                  className="text-xs sm:text-sm min-h-[44px] sm:min-h-auto"
                 >
                   {range.label}
                   {selectedPriceRange === range.value && (
@@ -136,9 +138,9 @@ export function FilterBar({
 
         {/* Active Filters Summary */}
         {hasActiveFilters && (
-          <div className="mt-4 pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-muted-foreground">Filtros ativos:</span>
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border/50">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm text-muted-foreground">Filtros ativos:</span>
               {selectedMaterial && (
                 <Badge variant="secondary" className="gap-1">
                   {materials.find(m => m.value === selectedMaterial)?.label}

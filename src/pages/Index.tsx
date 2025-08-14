@@ -343,19 +343,19 @@ const Index = () => {
           onClearFilters={handleClearFilters}
         />
 
-        <main className="container mx-auto px-6 py-8">
+        <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           {/* Results Summary */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
               Catálogo de Produtos
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {displayProducts.length} produto{displayProducts.length !== 1 ? 's' : ''} encontrado{displayProducts.length !== 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {displayProducts.map((product) => {
               const engravingConfig = engravingConfigs.find(config => config.product_id === product.id);
               
