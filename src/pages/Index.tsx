@@ -429,7 +429,6 @@ const Index = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onAddToCart={handleAddToCart}
                   engravingConfig={engravingConfig}
                 />
               );
@@ -459,10 +458,6 @@ const Index = () => {
         <Cart
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
-          items={cartItems}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveItem}
-          onCheckout={handleCheckout}
         />
       </div>
     </ProtectedRoute>

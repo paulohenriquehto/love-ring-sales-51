@@ -4,33 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { X, Minus, Plus, ShoppingBag, CreditCard, Smartphone, Paintbrush } from "lucide-react";
 import { useState } from "react";
-import { type EngravingCustomization, type SelectedSymbol } from "@/types/engraving";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
 import { EngravingDisplay } from "@/components/engraving/EngravingDisplay";
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  material: string;
-  size: string;
-  width?: string;
-  quantity: number;
-  engraving?: EngravingCustomization & {
-    selectedSymbols?: SelectedSymbol[];
-  };
-}
 
 interface CartProps {
   isOpen: boolean;
   onClose: () => void;
-  items: CartItem[];
-  onUpdateQuantity: (id: string, size: string, width: string | undefined, quantity: number) => void;
-  onRemoveItem: (id: string, size: string, width?: string) => void;
-  onCheckout: () => void;
 }
 
-export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }: CartProps) {
+export function Cart({ isOpen, onClose }: CartProps) {
+  const navigate = useNavigate();
+  const { items, updateQuantity, removeItem } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -91,7 +76,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onRemoveItem(item.id, item.size, item.width)}
+                          onClick={() => removeItem(item.id, item.size, item.width)}
                           className="text-muted-foreground hover:text-destructive"
                         >
                           <X className="h-4 w-4" />
@@ -117,7 +102,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onUpdateQuantity(item.id, item.size, item.width, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.size, item.width, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                           >
                             <Minus className="h-3 w-3" />
@@ -127,7 +112,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onUpdateQuantity(item.id, item.size, item.width, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.size, item.width, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -229,7 +214,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
               variant="cart"
               size="tablet"
               className="w-full"
-              onClick={onCheckout}
+              onClick={() => {
+                onClose();
+                navigate('/checkout');
+              }}
             >
               <CreditCard className="h-5 w-5 mr-2" />
               Finalizar Venda

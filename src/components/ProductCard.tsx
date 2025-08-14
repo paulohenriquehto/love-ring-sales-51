@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingCart, Heart, Paintbrush } from "lucide-react";
 import { useState } from "react";
+import { useCart } from "@/contexts/CartContext";
 import { EngravingCustomizer } from "@/components/engraving/EngravingCustomizer";
 import { EngravingDisplay } from "@/components/engraving/EngravingDisplay";
 import { type EngravingCustomization, type EngravingConfig } from "@/types/engraving";
@@ -23,7 +24,6 @@ interface Product {
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product, size: string, width?: string, engraving?: EngravingCustomization) => void;
   engravingConfig?: EngravingConfig;
 }
 
@@ -40,7 +40,8 @@ const stockColors = {
   out: "bg-red-500"
 };
 
-export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCardProps) {
+export function ProductCard({ product, engravingConfig }: ProductCardProps) {
+  const { addItem } = useCart();
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "");
   const [selectedWidth, setSelectedWidth] = useState<string>(product.widths?.[0] || "");
   const [isHovered, setIsHovered] = useState(false);
@@ -234,7 +235,7 @@ export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCa
           disabled={product.stock === 0 || !selectedSize || (product.widths && product.widths.length > 0 && !selectedWidth)}
           onClick={() => {
             if (selectedSize) {
-              onAddToCart(product, selectedSize, selectedWidth, pendingEngraving);
+              addItem(product, selectedSize, selectedWidth, pendingEngraving);
               // Reset personalização após adicionar ao carrinho
               setPendingEngraving(undefined);
               // Reset seleções para os primeiros valores disponíveis
