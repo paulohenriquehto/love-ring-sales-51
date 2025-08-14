@@ -1,12 +1,16 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Building2, ShoppingCart, BarChart3, LogOut } from 'lucide-react';
+import { Users, Building2, ShoppingCart, BarChart3, LogOut, Plus } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { pendingRequests, activeDepartments, activeUsers, monthlyExpenses, recentRequests } = useDashboardData();
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -27,6 +31,44 @@ const Dashboard = () => {
         return 'Gerente';
       default:
         return 'Usuário';
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'pending_approval':
+        return 'secondary';
+      case 'approved':
+        return 'default';
+      case 'rejected':
+        return 'destructive';
+      case 'completed':
+        return 'default';
+      case 'draft':
+        return 'secondary';
+      case 'submitted':
+        return 'secondary';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_approval':
+        return 'Pendente';
+      case 'approved':
+        return 'Aprovado';
+      case 'rejected':
+        return 'Rejeitado';
+      case 'completed':
+        return 'Concluído';
+      case 'draft':
+        return 'Rascunho';
+      case 'submitted':
+        return 'Enviado';
+      default:
+        return status;
     }
   };
 
@@ -68,9 +110,9 @@ const Dashboard = () => {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{pendingRequests}</div>
               <p className="text-xs text-muted-foreground">
-                +2 desde ontem
+                Aguardando aprovação
               </p>
             </CardContent>
           </Card>
@@ -81,7 +123,7 @@ const Dashboard = () => {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{activeDepartments}</div>
               <p className="text-xs text-muted-foreground">
                 Todos operacionais
               </p>
@@ -94,9 +136,9 @@ const Dashboard = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{activeUsers}</div>
               <p className="text-xs text-muted-foreground">
-                +3 este mês
+                Ativos no sistema
               </p>
             </CardContent>
           </Card>
@@ -107,9 +149,11 @@ const Dashboard = () => {
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ 8.430</div>
+              <div className="text-2xl font-bold">
+                R$ {monthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
               <p className="text-xs text-muted-foreground">
-                +12% vs mês anterior
+                Aprovado este mês
               </p>
             </CardContent>
           </Card>
@@ -124,21 +168,36 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start">
-                <ShoppingCart className="h-4 w-4 mr-2" />
+              <Button 
+                className="w-full justify-start"
+                onClick={() => navigate('/requests')}
+              >
+                <Plus className="h-4 w-4 mr-2" />
                 Nova Requisição
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => navigate('/analytics')}
+              >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Relatórios
               </Button>
               {(profile?.role === 'admin' || profile?.role === 'manager') && (
                 <>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => navigate('/users')}
+                  >
                     <Users className="h-4 w-4 mr-2" />
                     Gerenciar Usuários
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => navigate('/departments')}
+                  >
                     <Building2 className="h-4 w-4 mr-2" />
                     Gerenciar Departamentos
                   </Button>
@@ -156,27 +215,25 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Material de escritório</p>
-                    <p className="text-sm text-muted-foreground">TI - Em aprovação</p>
+                {recentRequests.length > 0 ? (
+                  recentRequests.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{request.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {request.departments?.name} - {request.requester_profile?.full_name}
+                        </p>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(request.status)}>
+                        {getStatusLabel(request.status)}
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    Nenhuma requisição encontrada
                   </div>
-                  <Badge variant="secondary">Pendente</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Equipamentos de segurança</p>
-                    <p className="text-sm text-muted-foreground">Operações - Aprovado</p>
-                  </div>
-                  <Badge variant="default">Aprovado</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Software de design</p>
-                    <p className="text-sm text-muted-foreground">RH - Rejeitado</p>
-                  </div>
-                  <Badge variant="destructive">Rejeitado</Badge>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
