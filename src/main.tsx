@@ -22,6 +22,10 @@ import Checkout from "./pages/Checkout.tsx";
 import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import ImportProducts from "./pages/ImportProducts.tsx";
 import ImportDashboard from "./pages/ImportDashboard.tsx";
+import Analytics from "./pages/Analytics.tsx";
+import AuditLogs from "./pages/AuditLogs.tsx";
+import Workflows from "./pages/Workflows.tsx";
+import APIManagement from "./pages/APIManagement.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -43,6 +47,10 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/products" element={<AppLayout><Products /></AppLayout>} />
               <Route path="/import-products" element={<AppLayout><ImportProducts /></AppLayout>} />
               <Route path="/import-dashboard" element={<AppLayout><ImportDashboard /></AppLayout>} />
+              <Route path="/analytics" element={<AppLayout><Analytics /></AppLayout>} />
+              <Route path="/audit-logs" element={<AppLayout><AuditLogs /></AppLayout>} />
+              <Route path="/workflows" element={<AppLayout><Workflows /></AppLayout>} />
+              <Route path="/api-management" element={<AppLayout><APIManagement /></AppLayout>} />
               <Route path="/checkout" element={<AppLayout><Checkout /></AppLayout>} />
               <Route path="/order-confirmation/:orderId" element={<AppLayout><OrderConfirmation /></AppLayout>} />
               <Route path="*" element={<NotFound />} />

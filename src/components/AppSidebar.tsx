@@ -50,6 +50,13 @@ const managementItems = [
   { title: "Relatórios", url: "/reports", icon: BarChart3, roles: ["admin", "manager"] },
 ];
 
+const enterpriseItems = [
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager"] },
+  { title: "Audit Logs", url: "/audit-logs", icon: Shield, roles: ["admin"] },
+  { title: "Workflows", url: "/workflows", icon: Settings, roles: ["admin", "manager"] },
+  { title: "API Management", url: "/api-management", icon: Settings, roles: ["admin"] },
+];
+
 const settingsItems = [
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
@@ -65,6 +72,9 @@ export function AppSidebar() {
   
   const isActive = (path: string) => currentPath === path;
   const hasManagementAccess = managementItems.some(item => 
+    !item.roles || item.roles.includes(profile?.role || "")
+  );
+  const hasEnterpriseAccess = enterpriseItems.some(item => 
     !item.roles || item.roles.includes(profile?.role || "")
   );
   
@@ -192,7 +202,39 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Settings */}
+        {/* Enterprise Section */}
+        {hasEnterpriseAccess && (
+          <SidebarGroup>
+            <Collapsible open={true}>
+              <SidebarGroupLabel>
+                <span>Recursos Empresariais</span>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuSub>
+                      {enterpriseItems
+                        .filter(canAccessItem)
+                        .map((item) => (
+                          <SidebarMenuSubItem key={item.title}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink 
+                                to={item.url} 
+                                className={getNavClasses(isActive(item.url))}
+                              >
+                                <item.icon className="w-4 h-4" />
+                                {!collapsed && <span>{item.title}</span>}
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                    </SidebarMenuSub>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>Conta</SidebarGroupLabel>
           <SidebarGroupContent>
