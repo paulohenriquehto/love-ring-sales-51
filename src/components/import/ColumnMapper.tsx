@@ -18,58 +18,97 @@ interface ColumnMapperProps {
   onMappingComplete: (config: ImportConfig) => void;
 }
 
-// Available mapping options - Expanded for WooCommerce compatibility
+// Available mapping options - Complete WooCommerce compatibility
 const MAPPING_OPTIONS = {
-  // Product fields
+  // Basic product fields
+  id: 'ID do Produto',
+  product_id: 'ID do Produto (External)',
+  external_id: 'ID Externo',
   name: 'Nome do Produto',
   sku: 'SKU',
+  type: 'Tipo de Produto',
+  
+  // Descriptions
   description: 'Descrição',
   short_description: 'Descrição Curta',
+  purchase_note: 'Nota de Compra',
+  
+  // Pricing
   base_price: 'Preço Base',
-  weight: 'Peso (kg)',
-  
-  // Category and classification
-  category: 'Categoria',
-  tags: 'Tags',
-  
-  // Stock
-  stock_quantity: 'Quantidade em Estoque',
-  manage_stock: 'Gerenciar Estoque',
-  stock_status: 'Status do Estoque',
-  
-  // Images
-  images: 'URLs das Imagens',
-  featured_image: 'Imagem Principal',
-  
-  // Variants and attributes
-  size: 'Tamanho',
-  color: 'Cor',
-  material: 'Material',
-  width: 'Largura',
-  attributes: 'Atributos',
-  
-  // WooCommerce specific fields
-  type: 'Tipo de Produto',
-  status: 'Status',
   regular_price: 'Preço Regular',
   sale_price: 'Preço Promocional',
   sale_price_start: 'Início Promoção',
   sale_price_end: 'Fim Promoção',
   
-  // Tax and shipping
-  tax_status: 'Status Fiscal',
-  tax_class: 'Classe Fiscal',
+  // Stock management
+  stock_quantity: 'Quantidade em Estoque',
+  manage_stock: 'Gerenciar Estoque',
+  stock_status: 'Status do Estoque',
+  in_stock: 'Em Estoque',
+  low_stock_amount: 'Quantidade Baixa em Estoque',
+  sold_individually: 'Vendido Individualmente',
+  
+  // Physical properties
+  weight: 'Peso (kg)',
+  length: 'Comprimento (cm)',
+  width: 'Largura (cm)',
+  height: 'Altura (cm)',
+  
+  // Organization
+  category: 'Categoria',
+  tags: 'Tags',
   shipping_class: 'Classe de Envio',
   
-  // Advanced WooCommerce
+  // Media
+  images: 'URLs das Imagens',
+  featured_image: 'Imagem Principal',
+  
+  // Status and visibility
+  status: 'Status',
+  published: 'Publicado',
+  visibility: 'Visibilidade',
+  featured: 'Produto em Destaque',
+  is_featured: 'É Destaque',
+  
+  // Position and ordering
+  position: 'Posição',
+  menu_order: 'Ordem no Menu',
+  
+  // Tax settings
+  tax_status: 'Status Fiscal',
+  tax_class: 'Classe Fiscal',
+  
+  // Product relationships
   parent_sku: 'SKU do Produto Pai',
   grouped_products: 'Produtos Agrupados',
   upsells: 'Vendas Cruzadas',
   cross_sells: 'Produtos Relacionados',
   
-  // Visibility and featured
-  visibility: 'Visibilidade',
-  featured: 'Produto em Destaque',
+  // Variants and attributes
+  size: 'Tamanho',
+  color: 'Cor',
+  material: 'Material',
+  attributes: 'Atributos',
+  swatches_attributes: 'Atributos de Amostras',
+  
+  // Attribute 1 fields
+  attribute_1_name: 'Nome do Atributo 1',
+  attribute_1_values: 'Valores do Atributo 1',
+  attribute_1_visible: 'Atributo 1 Visível',
+  attribute_1_global: 'Atributo 1 Global',
+  attribute_1_default: 'Valor Padrão do Atributo 1',
+  
+  // Attribute 2 fields
+  attribute_2_name: 'Nome do Atributo 2',
+  attribute_2_values: 'Valores do Atributo 2',
+  attribute_2_visible: 'Atributo 2 Visível',
+  attribute_2_global: 'Atributo 2 Global',
+  
+  // Digital product fields
+  downloadable: 'Baixável',
+  virtual: 'Virtual',
+  download_limit: 'Limite de Download',
+  download_expiry: 'Expiração de Download',
   
   // External product fields
   external_url: 'URL Externa',
@@ -78,8 +117,10 @@ const MAPPING_OPTIONS = {
   // Meta fields
   meta_title: 'Título SEO',
   meta_description: 'Descrição SEO',
+  meta_cartflows_redirect_flow_id: 'Meta: CartFlows Redirect Flow ID',
+  meta_cartflows_add_to_cart_text: 'Meta: CartFlows Add to Cart Text',
   
-  // Ignore
+  // System
   ignore: 'Ignorar',
 };
 
@@ -102,23 +143,45 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
     csvData.headers.forEach(header => {
       const lowerHeader = header.toLowerCase().trim();
       
-      // WooCommerce exact field mappings
-      if (lowerHeader === 'name' || lowerHeader === 'product name') {
+      // WooCommerce exact field mappings (Complete CSV compatibility)
+      if (lowerHeader === 'id') {
+        autoMapping[header] = 'id';
+      } else if (lowerHeader === 'name' || lowerHeader === 'product name') {
         autoMapping[header] = 'name';
       } else if (lowerHeader === 'sku') {
         autoMapping[header] = 'sku';
+      } else if (lowerHeader === 'type') {
+        autoMapping[header] = 'type';
       } else if (lowerHeader === 'description') {
         autoMapping[header] = 'description';
       } else if (lowerHeader === 'short description') {
         autoMapping[header] = 'short_description';
+      } else if (lowerHeader === 'purchase note') {
+        autoMapping[header] = 'purchase_note';
       } else if (lowerHeader === 'regular price') {
         autoMapping[header] = 'regular_price';
       } else if (lowerHeader === 'sale price') {
         autoMapping[header] = 'sale_price';
+      } else if (lowerHeader === 'date sale price starts') {
+        autoMapping[header] = 'sale_price_start';
+      } else if (lowerHeader === 'date sale price ends') {
+        autoMapping[header] = 'sale_price_end';
       } else if (lowerHeader === 'stock' || lowerHeader === 'stock quantity') {
         autoMapping[header] = 'stock_quantity';
       } else if (lowerHeader === 'in stock?' || lowerHeader === 'stock status') {
         autoMapping[header] = 'stock_status';
+      } else if (lowerHeader === 'low stock amount') {
+        autoMapping[header] = 'low_stock_amount';
+      } else if (lowerHeader === 'sold individually?') {
+        autoMapping[header] = 'sold_individually';
+      } else if (lowerHeader === 'weight (kg)') {
+        autoMapping[header] = 'weight';
+      } else if (lowerHeader === 'length (cm)') {
+        autoMapping[header] = 'length';
+      } else if (lowerHeader === 'width (cm)') {
+        autoMapping[header] = 'width';
+      } else if (lowerHeader === 'height (cm)') {
+        autoMapping[header] = 'height';
       } else if (lowerHeader === 'images' || lowerHeader === 'image gallery') {
         autoMapping[header] = 'images';
       } else if (lowerHeader === 'featured image') {
@@ -127,18 +190,57 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
         autoMapping[header] = 'category';
       } else if (lowerHeader === 'tags') {
         autoMapping[header] = 'tags';
-      } else if (lowerHeader === 'weight') {
-        autoMapping[header] = 'weight';
-      } else if (lowerHeader === 'type' || lowerHeader === 'product type') {
-        autoMapping[header] = 'type';
-      } else if (lowerHeader === 'status' || lowerHeader === 'published') {
-        autoMapping[header] = 'status';
+      } else if (lowerHeader === 'shipping class') {
+        autoMapping[header] = 'shipping_class';
+      } else if (lowerHeader === 'published') {
+        autoMapping[header] = 'published';
+      } else if (lowerHeader === 'is featured?') {
+        autoMapping[header] = 'is_featured';
+      } else if (lowerHeader === 'visibility in catalog') {
+        autoMapping[header] = 'visibility';
       } else if (lowerHeader === 'tax status') {
         autoMapping[header] = 'tax_status';
       } else if (lowerHeader === 'tax class') {
         autoMapping[header] = 'tax_class';
-      } else if (lowerHeader === 'shipping class') {
-        autoMapping[header] = 'shipping_class';
+      } else if (lowerHeader === 'position') {
+        autoMapping[header] = 'position';
+      } else if (lowerHeader === 'grouped products') {
+        autoMapping[header] = 'grouped_products';
+      } else if (lowerHeader === 'upsells') {
+        autoMapping[header] = 'upsells';
+      } else if (lowerHeader === 'swatches attributes') {
+        autoMapping[header] = 'swatches_attributes';
+      } else if (lowerHeader === 'attribute 1 name') {
+        autoMapping[header] = 'attribute_1_name';
+      } else if (lowerHeader === 'attribute 1 value(s)') {
+        autoMapping[header] = 'attribute_1_values';
+      } else if (lowerHeader === 'attribute 1 visible') {
+        autoMapping[header] = 'attribute_1_visible';
+      } else if (lowerHeader === 'attribute 1 global') {
+        autoMapping[header] = 'attribute_1_global';
+      } else if (lowerHeader === 'attribute 1 default') {
+        autoMapping[header] = 'attribute_1_default';
+      } else if (lowerHeader === 'attribute 2 name') {
+        autoMapping[header] = 'attribute_2_name';
+      } else if (lowerHeader === 'attribute 2 value(s)') {
+        autoMapping[header] = 'attribute_2_values';
+      } else if (lowerHeader === 'attribute 2 visible') {
+        autoMapping[header] = 'attribute_2_visible';
+      } else if (lowerHeader === 'attribute 2 global') {
+        autoMapping[header] = 'attribute_2_global';
+      } else if (lowerHeader === 'meta: cartflows_redirect_flow_id') {
+        autoMapping[header] = 'meta_cartflows_redirect_flow_id';
+      } else if (lowerHeader === 'meta: cartflows_add_to_cart_text') {
+        autoMapping[header] = 'meta_cartflows_add_to_cart_text';
+      }
+      
+      // Legacy mappings for backward compatibility
+      else if (lowerHeader === 'weight') {
+        autoMapping[header] = 'weight';
+      } else if (lowerHeader === 'type' || lowerHeader === 'product type') {
+        autoMapping[header] = 'type';
+      } else if (lowerHeader === 'status') {
+        autoMapping[header] = 'status';
       } else if (lowerHeader === 'featured' || lowerHeader === 'featured?') {
         autoMapping[header] = 'featured';
       } else if (lowerHeader === 'visibility') {
@@ -149,20 +251,12 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
         autoMapping[header] = 'attributes';
       } else if (lowerHeader === 'manage stock?' || lowerHeader === 'manage stock') {
         autoMapping[header] = 'manage_stock';
-      } else if (lowerHeader === 'date sale price starts from' || lowerHeader === 'sale start date') {
-        autoMapping[header] = 'sale_price_start';
-      } else if (lowerHeader === 'date sale price ends' || lowerHeader === 'sale end date') {
-        autoMapping[header] = 'sale_price_end';
       } else if (lowerHeader === 'external url') {
         autoMapping[header] = 'external_url';
       } else if (lowerHeader === 'button text') {
         autoMapping[header] = 'button_text';
-      } else if (lowerHeader === 'upsells') {
-        autoMapping[header] = 'upsells';
       } else if (lowerHeader === 'cross-sells') {
         autoMapping[header] = 'cross_sells';
-      } else if (lowerHeader === 'grouped products') {
-        autoMapping[header] = 'grouped_products';
       } else if (lowerHeader === 'meta: _yoast_wpseo_title' || lowerHeader === 'seo title') {
         autoMapping[header] = 'meta_title';
       } else if (lowerHeader === 'meta: _yoast_wpseo_metadesc' || lowerHeader === 'seo description') {

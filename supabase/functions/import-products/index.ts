@@ -266,8 +266,120 @@ async function processProduct(
   if (productData.status) {
     const status = productData.status.toLowerCase();
     productData.active = status === 'publish' || status === 'published' || status === 'true';
+  } else if (productData.published) {
+    const published = productData.published.toLowerCase();
+    productData.active = published === '1' || published === 'true' || published === 'yes';
   } else {
     productData.active = true; // Default to active
+  }
+
+  // Handle additional WooCommerce boolean fields
+  if (productData.is_featured) {
+    const featuredValue = productData.is_featured.toLowerCase();
+    productData.featured = featuredValue === '1' || featuredValue === 'true' || featuredValue === 'yes';
+  }
+
+  if (productData.sold_individually) {
+    const soldIndividuallyValue = productData.sold_individually.toLowerCase();
+    productData.sold_individually = soldIndividuallyValue === '1' || soldIndividuallyValue === 'true' || soldIndividuallyValue === 'yes';
+  }
+
+  // Handle numeric conversions for dimensions and quantities
+  if (productData.length) {
+    const length = parseFloat(productData.length);
+    productData.length = isNaN(length) ? null : length;
+  }
+
+  if (productData.width) {
+    const width = parseFloat(productData.width);
+    productData.width = isNaN(width) ? null : width;
+  }
+
+  if (productData.height) {
+    const height = parseFloat(productData.height);
+    productData.height = isNaN(height) ? null : height;
+  }
+
+  if (productData.weight) {
+    const weight = parseFloat(productData.weight);
+    productData.weight = isNaN(weight) ? null : weight;
+  }
+
+  if (productData.low_stock_amount) {
+    const lowStock = parseInt(productData.low_stock_amount);
+    productData.low_stock_amount = isNaN(lowStock) ? null : lowStock;
+  }
+
+  if (productData.position) {
+    const position = parseInt(productData.position);
+    productData.menu_order = isNaN(position) ? null : position;
+  }
+
+  // Handle date fields for sale prices
+  if (productData.sale_price_start && productData.sale_price_start !== '') {
+    try {
+      const startDate = new Date(productData.sale_price_start);
+      if (!isNaN(startDate.getTime())) {
+        productData.sale_price_start = startDate.toISOString();
+      } else {
+        productData.sale_price_start = null;
+      }
+    } catch (e) {
+      productData.sale_price_start = null;
+    }
+  }
+
+  if (productData.sale_price_end && productData.sale_price_end !== '') {
+    try {
+      const endDate = new Date(productData.sale_price_end);
+      if (!isNaN(endDate.getTime())) {
+        productData.sale_price_end = endDate.toISOString();
+      } else {
+        productData.sale_price_end = null;
+      }
+    } catch (e) {
+      productData.sale_price_end = null;
+    }
+  }
+
+  // Handle attribute fields (store as JSON or process separately)
+  const attributeData: any = {};
+  if (productData.attribute_1_name && productData.attribute_1_values) {
+    attributeData.attribute_1 = {
+      name: productData.attribute_1_name,
+      values: productData.attribute_1_values.split(',').map((v: string) => v.trim()),
+      visible: productData.attribute_1_visible === '1' || productData.attribute_1_visible === 'true',
+      global: productData.attribute_1_global === '1' || productData.attribute_1_global === 'true',
+      default: productData.attribute_1_default || null
+    };
+  }
+
+  if (productData.attribute_2_name && productData.attribute_2_values) {
+    attributeData.attribute_2 = {
+      name: productData.attribute_2_name,
+      values: productData.attribute_2_values.split(',').map((v: string) => v.trim()),
+      visible: productData.attribute_2_visible === '1' || productData.attribute_2_visible === 'true',
+      global: productData.attribute_2_global === '1' || productData.attribute_2_global === 'true'
+    };
+  }
+
+  // Store attributes as JSON if any exist
+  if (Object.keys(attributeData).length > 0) {
+    productData.attributes_data = JSON.stringify(attributeData);
+  }
+
+  // Handle meta fields
+  const metaData: any = {};
+  if (productData.meta_cartflows_redirect_flow_id) {
+    metaData.cartflows_redirect_flow_id = productData.meta_cartflows_redirect_flow_id;
+  }
+  if (productData.meta_cartflows_add_to_cart_text) {
+    metaData.cartflows_add_to_cart_text = productData.meta_cartflows_add_to_cart_text;
+  }
+
+  // Store meta data as JSON if any exist
+  if (Object.keys(metaData).length > 0) {
+    productData.meta_data = JSON.stringify(metaData);
   }
 
   // Validate required fields with detailed messages
