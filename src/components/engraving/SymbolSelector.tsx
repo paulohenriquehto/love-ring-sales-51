@@ -69,7 +69,7 @@ export function SymbolSelector({ selectedSymbols, onSymbolSelect, onSymbolRemove
       </div>
 
       <Tabs defaultValue={categories[0]?.id} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={`grid w-full ${categories.length === 3 ? 'grid-cols-3' : `grid-cols-${categories.length}`}`}>
           {categories.map((category) => (
             <TabsTrigger key={category.id} value={category.id} className="text-xs">
               <span className="mr-1">{category.icon}</span>
