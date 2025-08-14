@@ -14,6 +14,7 @@ interface EngravingCustomizerProps {
   onCancel: () => void;
   productId: string;
   variantId?: string;
+  existingCustomization?: EngravingCustomization;
 }
 
 export function EngravingCustomizer({ 
@@ -21,11 +22,12 @@ export function EngravingCustomizer({
   onConfirm, 
   onCancel, 
   productId, 
-  variantId 
+  variantId,
+  existingCustomization 
 }: EngravingCustomizerProps) {
-  const [text, setText] = useState("");
-  const [font, setFont] = useState<FontValue>("arial");
-  const [selectedSymbols, setSelectedSymbols] = useState<SelectedSymbol[]>([]);
+  const [text, setText] = useState(existingCustomization?.text || "");
+  const [font, setFont] = useState<FontValue>(existingCustomization?.font || "arial");
+  const [selectedSymbols, setSelectedSymbols] = useState<SelectedSymbol[]>(existingCustomization?.selectedSymbols || []);
 
   const handleSymbolSelect = (symbol: EngravingSymbol, position: 'left' | 'right' | 'above' | 'below') => {
     setSelectedSymbols(prev => [
@@ -61,10 +63,10 @@ export function EngravingCustomizer({
     <div className="max-h-[85vh] overflow-hidden flex flex-col">
       <div className="text-center border-b border-border pb-3 px-4 pt-4">
         <h3 className="text-lg font-semibold text-foreground">
-          Personalização da Gravação
+          {existingCustomization ? 'Editar Gravação' : 'Personalização da Gravação'}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Adicione um toque pessoal à sua peça
+          {existingCustomization ? 'Modifique sua personalização' : 'Adicione um toque pessoal à sua peça'}
         </p>
       </div>
 
@@ -145,7 +147,7 @@ export function EngravingCustomizer({
             disabled={!isValid}
             className="flex-1 bg-gradient-elegant text-white hover:bg-gradient-elegant/90"
           >
-            Confirmar gravação
+            {existingCustomization ? 'Salvar alterações' : 'Confirmar gravação'}
           </Button>
         </div>
       </div>

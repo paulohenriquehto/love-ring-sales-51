@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ShoppingCart, Heart, Paintbrush } from "lucide-react";
 import { useState } from "react";
 import { EngravingCustomizer } from "@/components/engraving/EngravingCustomizer";
+import { EngravingDisplay } from "@/components/engraving/EngravingDisplay";
 import { type EngravingCustomization, type EngravingConfig } from "@/types/engraving";
 
 interface Product {
@@ -203,10 +204,25 @@ export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCa
 
         {/* Engraving Preview */}
         {pendingEngraving && (
-          <div className="mb-3 p-3 bg-muted/50 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground mb-1">Gravação:</p>
-            <p className="text-sm font-medium text-foreground">"{pendingEngraving.text}"</p>
-            <p className="text-xs text-muted-foreground">Fonte: {pendingEngraving.font}</p>
+          <div className="mb-3 p-3 bg-gradient-subtle border border-primary/20 rounded-lg">
+            <EngravingDisplay
+              text={pendingEngraving.text}
+              font={pendingEngraving.font}
+              selectedSymbols={pendingEngraving.selectedSymbols}
+              compact={true}
+              showTitle={true}
+            />
+            {pendingEngraving.selectedSymbols && pendingEngraving.selectedSymbols.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                {pendingEngraving.selectedSymbols.map((selected, index) => (
+                  <span key={index} className="text-xs bg-secondary px-1.5 py-0.5 rounded">
+                    {selected.position === 'left' ? '← emoji' : 
+                     selected.position === 'right' ? 'emoji →' : 
+                     selected.position === 'above' ? '↑ emoji' : 'emoji ↓'}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -237,6 +253,7 @@ export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCa
             <EngravingCustomizer
               config={engravingConfig}
               productId={product.id}
+              existingCustomization={pendingEngraving}
               onConfirm={(customization) => {
                 setPendingEngraving(customization);
                 setIsEngravingOpen(false);
