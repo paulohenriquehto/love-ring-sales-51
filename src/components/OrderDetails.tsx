@@ -7,6 +7,8 @@ import { Order } from '@/types/order';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User, Phone, Mail, MapPin, Package, FileText, Printer, Edit3 } from 'lucide-react';
+import { EngravingDisplay } from '@/components/engraving/EngravingDisplay';
+import type { SelectedSymbol } from '@/types/engraving';
 
 interface OrderDetailsProps {
   order: Order | null;
@@ -35,6 +37,22 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
       cancelled: 'Cancelado'
     };
     return statusMap[status as keyof typeof statusMap] || status;
+  };
+
+  // Parse engraving symbols from JSON string to SelectedSymbol[]
+  const parseEngravingSymbols = (symbolsJson?: string): SelectedSymbol[] => {
+    if (!symbolsJson) return [];
+    try {
+      const parsed = JSON.parse(symbolsJson);
+      // Handle both array of objects and direct objects
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error parsing engraving symbols:', error);
+      return [];
+    }
   };
 
   const handlePrint = () => {
@@ -191,23 +209,14 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
 
                   {/* Engraving Details */}
                   {(item.engraving_text || item.engraving_font || item.engraving_symbols) && (
-                    <div className="mt-3 pt-3 border-t bg-muted/30 p-3 rounded">
-                      <h5 className="font-medium text-sm mb-2">Personalização:</h5>
-                      {item.engraving_text && (
-                        <p className="text-sm">
-                          <span className="font-medium">Texto:</span> {item.engraving_text}
-                        </p>
-                      )}
-                      {item.engraving_font && (
-                        <p className="text-sm">
-                          <span className="font-medium">Fonte:</span> {item.engraving_font}
-                        </p>
-                      )}
-                      {item.engraving_symbols && (
-                        <p className="text-sm">
-                          <span className="font-medium">Símbolos:</span> {item.engraving_symbols}
-                        </p>
-                      )}
+                    <div className="bg-primary/5 rounded-lg p-3 border border-primary/20 mt-3">
+                      <EngravingDisplay
+                        text={item.engraving_text || ""}
+                        font={item.engraving_font || "arial"}
+                        selectedSymbols={parseEngravingSymbols(item.engraving_symbols)}
+                        compact={true}
+                        showTitle={true}
+                      />
                     </div>
                   )}
                 </div>
