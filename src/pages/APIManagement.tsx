@@ -1,289 +1,131 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Server,
   Key,
   Activity,
   Shield,
-  Code,
   Globe,
   Copy,
   Eye,
   EyeOff,
   Plus,
   Trash2,
-  MoreVertical,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  BarChart3
+  BarChart3,
+  Loader2,
+  MoreVertical
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAPIManagement } from '@/hooks/useAPIManagement';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
-interface APIKey {
-  id: string;
-  name: string;
-  key: string;
-  permissions: string[];
-  rate_limit: number;
-  requests_count: number;
-  last_used: string;
-  status: 'active' | 'inactive' | 'expired';
-  created_at: string;
-  expires_at?: string;
-}
-
-interface APIEndpoint {
-  id: string;
-  path: string;
-  method: string;
-  description: string;
-  status: 'active' | 'deprecated' | 'beta';
-  requests_today: number;
-  avg_response_time: number;
-  error_rate: number;
-  last_request: string;
-}
-
-interface WebhookEndpoint {
-  id: string;
-  name: string;
-  url: string;
-  events: string[];
-  status: 'active' | 'inactive';
-  deliveries_count: number;
-  success_rate: number;
-  last_delivery: string;
-  created_at: string;
-}
+const availableEvents = [
+  'order.created',
+  'order.updated', 
+  'order.completed',
+  'order.cancelled',
+  'user.created',
+  'user.updated',
+  'product.created',
+  'product.updated',
+  'inventory.low_stock',
+  'inventory.out_of_stock'
+];
 
 const APIManagement = () => {
-  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
-  const [endpoints, setEndpoints] = useState<APIEndpoint[]>([]);
-  const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
   const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyPermissions, setNewKeyPermissions] = useState<string[]>(['read']);
+  const [newKeyRateLimit, setNewKeyRateLimit] = useState(1000);
+  const [newWebhookName, setNewWebhookName] = useState('');
+  const [newWebhookUrl, setNewWebhookUrl] = useState('');
+  const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState('overview');
-  const { toast } = useToast();
+  const [isCreateKeyOpen, setIsCreateKeyOpen] = useState(false);
+  const [isCreateWebhookOpen, setIsCreateWebhookOpen] = useState(false);
   const { profile } = useAuth();
+  
+  const { 
+    apiKeys, 
+    requestStats, 
+    webhooks, 
+    isLoading, 
+    createAPIKey, 
+    revokeAPIKey,
+    createWebhook,
+    toggleWebhookStatus
+  } = useAPIManagement();
 
-  useEffect(() => {
-    loadAPIData();
-  }, []);
-
-  const loadAPIData = async () => {
-    try {
-      setLoading(true);
-      
-      // Simulated API data - in production this would come from api_management tables
-      const mockApiKeys: APIKey[] = [
-        {
-          id: '1',
-          name: 'Frontend App',
-          key: 'pk_live_51234567890abcdef',
-          permissions: ['read', 'write'],
-          rate_limit: 1000,
-          requests_count: 8432,
-          last_used: new Date().toISOString(),
-          status: 'active',
-          created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-          expires_at: new Date(Date.now() + 86400000 * 365).toISOString()
-        },
-        {
-          id: '2',
-          name: 'Mobile App',
-          key: 'pk_live_98765432101234567',
-          permissions: ['read'],
-          rate_limit: 500,
-          requests_count: 2156,
-          last_used: new Date(Date.now() - 3600000).toISOString(),
-          status: 'active',
-          created_at: new Date(Date.now() - 86400000 * 15).toISOString()
-        },
-        {
-          id: '3',
-          name: 'Integration Service',
-          key: 'pk_test_11223344556677889',
-          permissions: ['read', 'write', 'admin'],
-          rate_limit: 2000,
-          requests_count: 15678,
-          last_used: new Date(Date.now() - 1800000).toISOString(),
-          status: 'active',
-          created_at: new Date(Date.now() - 86400000 * 7).toISOString()
-        }
-      ];
-
-      const mockEndpoints: APIEndpoint[] = [
-        {
-          id: '1',
-          path: '/api/v1/products',
-          method: 'GET',
-          description: 'Lista todos os produtos',
-          status: 'active',
-          requests_today: 1234,
-          avg_response_time: 245,
-          error_rate: 1.2,
-          last_request: new Date().toISOString()
-        },
-        {
-          id: '2',
-          path: '/api/v1/orders',
-          method: 'POST',
-          description: 'Cria um novo pedido',
-          status: 'active',
-          requests_today: 456,
-          avg_response_time: 678,
-          error_rate: 2.8,
-          last_request: new Date(Date.now() - 300000).toISOString()
-        },
-        {
-          id: '3',
-          path: '/api/v1/users',
-          method: 'GET',
-          description: 'Lista usuários (deprecated)',
-          status: 'deprecated',
-          requests_today: 23,
-          avg_response_time: 156,
-          error_rate: 0.5,
-          last_request: new Date(Date.now() - 7200000).toISOString()
-        },
-        {
-          id: '4',
-          path: '/api/v2/analytics',
-          method: 'GET',
-          description: 'Dados de analytics (beta)',
-          status: 'beta',
-          requests_today: 89,
-          avg_response_time: 423,
-          error_rate: 5.1,
-          last_request: new Date(Date.now() - 1800000).toISOString()
-        }
-      ];
-
-      const mockWebhooks: WebhookEndpoint[] = [
-        {
-          id: '1',
-          name: 'Order Updates',
-          url: 'https://example.com/webhooks/orders',
-          events: ['order.created', 'order.updated', 'order.completed'],
-          status: 'active',
-          deliveries_count: 1567,
-          success_rate: 98.5,
-          last_delivery: new Date().toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 20).toISOString()
-        },
-        {
-          id: '2',
-          name: 'User Events',
-          url: 'https://crm.company.com/api/users',
-          events: ['user.created', 'user.updated'],
-          status: 'active',
-          deliveries_count: 234,
-          success_rate: 100,
-          last_delivery: new Date(Date.now() - 3600000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 10).toISOString()
-        },
-        {
-          id: '3',
-          name: 'Inventory Alerts',
-          url: 'https://inventory.company.com/webhook',
-          events: ['inventory.low_stock', 'inventory.out_of_stock'],
-          status: 'inactive',
-          deliveries_count: 89,
-          success_rate: 94.2,
-          last_delivery: new Date(Date.now() - 86400000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 5).toISOString()
-        }
-      ];
-
-      setApiKeys(mockApiKeys);
-      setEndpoints(mockEndpoints);
-      setWebhooks(mockWebhooks);
-    } catch (error) {
-      console.error('Error loading API data:', error);
-      toast({
-        title: "Erro ao carregar dados da API",
-        description: "Não foi possível carregar os dados de gerenciamento da API",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateApiKey = async () => {
+  const handleCreateAPIKey = async () => {
     if (!newKeyName.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Por favor, insira um nome para a chave de API",
-        variant: "destructive",
-      });
+      toast.error('Nome da chave é obrigatório');
       return;
     }
 
     try {
-      const newKey: APIKey = {
-        id: Date.now().toString(),
+      const result = await createAPIKey.mutateAsync({
         name: newKeyName,
-        key: `pk_live_${Math.random().toString(36).substr(2, 20)}`,
-        permissions: ['read'],
-        rate_limit: 1000,
-        requests_count: 0,
-        last_used: '',
-        status: 'active',
-        created_at: new Date().toISOString()
-      };
+        permissions: newKeyPermissions,
+        rateLimit: newKeyRateLimit
+      });
 
-      setApiKeys([...apiKeys, newKey]);
+      if (result.plain_key) {
+        // Show the key to user once
+        navigator.clipboard.writeText(result.plain_key);
+        toast.success(`Chave criada! Copiada para área de transferência: ${result.plain_key.substring(0, 20)}...`);
+      }
+
       setNewKeyName('');
-      
-      toast({
-        title: "Chave criada",
-        description: "Nova chave de API foi gerada com sucesso",
-      });
+      setNewKeyPermissions(['read']);
+      setNewKeyRateLimit(1000);
+      setIsCreateKeyOpen(false);
     } catch (error) {
-      toast({
-        title: "Erro ao criar chave",
-        description: "Não foi possível gerar a nova chave de API",
-        variant: "destructive",
-      });
+      toast.error('Erro ao criar chave de API');
     }
   };
 
-  const revokeApiKey = async (keyId: string) => {
+  const handleCreateWebhook = async () => {
+    if (!newWebhookName.trim() || !newWebhookUrl.trim() || newWebhookEvents.length === 0) {
+      toast.error('Todos os campos são obrigatórios');
+      return;
+    }
+
     try {
-      setApiKeys(apiKeys.map(key => 
-        key.id === keyId ? { ...key, status: 'inactive' as const } : key
-      ));
-      
-      toast({
-        title: "Chave revogada",
-        description: "A chave de API foi revogada com sucesso",
+      await createWebhook.mutateAsync({
+        name: newWebhookName,
+        url: newWebhookUrl,
+        events: newWebhookEvents
       });
+
+      setNewWebhookName('');
+      setNewWebhookUrl('');
+      setNewWebhookEvents([]);
+      setIsCreateWebhookOpen(false);
     } catch (error) {
-      toast({
-        title: "Erro ao revogar chave",
-        description: "Não foi possível revogar a chave de API",
-        variant: "destructive",
-      });
+      toast.error('Erro ao criar webhook');
+    }
+  };
+
+  const handleRevokeKey = async (keyId: string) => {
+    try {
+      await revokeAPIKey.mutateAsync(keyId);
+    } catch (error) {
+      toast.error('Erro ao revogar chave');
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({
-      title: "Copiado",
-      description: "Chave copiada para a área de transferência",
-    });
+    toast.success('Copiado para área de transferência');
   };
 
   const toggleKeyVisibility = (keyId: string) => {
@@ -293,25 +135,24 @@ const APIManagement = () => {
     }));
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'expired': return 'destructive';
-      case 'deprecated': return 'destructive';
-      case 'beta': return 'outline';
-      default: return 'secondary';
-    }
+  const getStatusBadgeVariant = (status: boolean) => {
+    return status ? 'default' : 'secondary';
   };
 
-  const getMethodBadgeVariant = (method: string) => {
-    switch (method) {
-      case 'GET': return 'default';
-      case 'POST': return 'default';
-      case 'PUT': return 'outline';
-      case 'DELETE': return 'destructive';
-      default: return 'secondary';
-    }
+  const handlePermissionToggle = (permission: string) => {
+    setNewKeyPermissions(prev => 
+      prev.includes(permission) 
+        ? prev.filter(p => p !== permission)
+        : [...prev, permission]
+    );
+  };
+
+  const handleEventToggle = (event: string) => {
+    setNewWebhookEvents(prev => 
+      prev.includes(event) 
+        ? prev.filter(e => e !== event)
+        : [...prev, event]
+    );
   };
 
   if (profile?.role !== 'admin') {
@@ -330,7 +171,7 @@ const APIManagement = () => {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-center py-12">
@@ -363,7 +204,7 @@ const APIManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Chaves Ativas</p>
                 <p className="text-2xl font-bold">
-                  {apiKeys.filter(key => key.status === 'active').length}
+                  {apiKeys.filter(key => key.active).length}
                 </p>
               </div>
               <Key className="w-8 h-8 text-blue-500" />
@@ -377,7 +218,7 @@ const APIManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Requests Hoje</p>
                 <p className="text-2xl font-bold">
-                  {endpoints.reduce((sum, endpoint) => sum + endpoint.requests_today, 0).toLocaleString()}
+                  {requestStats?.totalRequests || 0}
                 </p>
               </div>
               <Activity className="w-8 h-8 text-green-500" />
@@ -389,9 +230,9 @@ const APIManagement = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Endpoints Ativos</p>
+                <p className="text-sm text-muted-foreground">Webhooks Ativos</p>
                 <p className="text-2xl font-bold">
-                  {endpoints.filter(ep => ep.status === 'active').length}
+                  {webhooks.filter(wh => wh.active).length}
                 </p>
               </div>
               <Globe className="w-8 h-8 text-purple-500" />
@@ -405,7 +246,7 @@ const APIManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Taxa de Erro</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {(endpoints.reduce((sum, ep) => sum + ep.error_rate, 0) / endpoints.length).toFixed(1)}%
+                  {requestStats?.errorRate.toFixed(1) || 0}%
                 </p>
               </div>
               <AlertTriangle className="w-8 h-8 text-orange-500" />
@@ -416,10 +257,9 @@ const APIManagement = () => {
 
       {/* Main Content */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="keys">Chaves de API</TabsTrigger>
-          <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
 
@@ -429,24 +269,27 @@ const APIManagement = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5" />
-                  Uso da API por Endpoint
+                  Estatísticas da API
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {endpoints.slice(0, 5).map((endpoint) => (
-                    <div key={endpoint.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getMethodBadgeVariant(endpoint.method)}>
-                          {endpoint.method}
-                        </Badge>
-                        <span className="text-sm font-mono">{endpoint.path}</span>
-                      </div>
-                      <span className="text-sm font-medium">
-                        {endpoint.requests_today} req
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total de Requests (24h)</span>
+                    <span className="font-medium">{requestStats?.totalRequests || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tempo Médio de Resposta</span>
+                    <span className="font-medium">{requestStats?.avgResponseTime.toFixed(0) || 0}ms</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Taxa de Erro</span>
+                    <span className={`font-medium ${
+                      (requestStats?.errorRate || 0) > 5 ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {requestStats?.errorRate.toFixed(1) || 0}%
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -455,35 +298,29 @@ const APIManagement = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5" />
-                  Performance dos Endpoints
+                  Chaves de API
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {endpoints.slice(0, 5).map((endpoint) => (
-                    <div key={endpoint.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-mono">{endpoint.path}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {endpoint.avg_response_time}ms
-                        </span>
+                  {apiKeys.slice(0, 3).map((key) => (
+                    <div key={key.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{key.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Rate limit: {key.rate_limit}/h
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-secondary rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full" 
-                            style={{ width: `${Math.min(endpoint.avg_response_time / 10, 100)}%` }}
-                          />
-                        </div>
-                        <span className={`text-xs ${
-                          endpoint.error_rate > 5 ? 'text-red-500' : 
-                          endpoint.error_rate > 2 ? 'text-orange-500' : 'text-green-500'
-                        }`}>
-                          {endpoint.error_rate}% erro
-                        </span>
-                      </div>
+                      <Badge variant={key.active ? 'default' : 'secondary'}>
+                        {key.active ? 'Ativa' : 'Inativa'}
+                      </Badge>
                     </div>
                   ))}
+                  {apiKeys.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma chave de API encontrada
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -502,18 +339,71 @@ const APIManagement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 mb-6">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Nome da nova chave de API..."
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                  />
-                </div>
-                <Button onClick={generateApiKey} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Gerar Chave
-                </Button>
+              <div className="flex justify-end mb-6">
+                <Dialog open={isCreateKeyOpen} onOpenChange={setIsCreateKeyOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Nova Chave API
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Criar Nova Chave de API</DialogTitle>
+                      <DialogDescription>
+                        Configure uma nova chave de API com permissões específicas
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Nome</label>
+                        <Input
+                          placeholder="Nome da chave..."
+                          value={newKeyName}
+                          onChange={(e) => setNewKeyName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Permissões</label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {['read', 'write', 'admin'].map((permission) => (
+                            <div key={permission} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={permission}
+                                checked={newKeyPermissions.includes(permission)}
+                                onChange={() => handlePermissionToggle(permission)}
+                              />
+                              <label htmlFor={permission} className="text-sm capitalize">
+                                {permission}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Rate Limit (por hora)</label>
+                        <Input
+                          type="number"
+                          value={newKeyRateLimit}
+                          onChange={(e) => setNewKeyRateLimit(Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsCreateKeyOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button 
+                        onClick={handleCreateAPIKey}
+                        disabled={createAPIKey.isPending}
+                      >
+                        {createAPIKey.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Criar Chave
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <Table>
@@ -536,7 +426,7 @@ const APIManagement = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <code className="text-sm bg-secondary px-2 py-1 rounded">
-                            {showApiKey[key.id] ? key.key : '••••••••••••••••'}
+                            {showApiKey[key.id] ? key.key_hash : '••••••••••••••••'}
                           </code>
                           <Button
                             variant="ghost"
@@ -548,7 +438,7 @@ const APIManagement = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => copyToClipboard(key.key)}
+                            onClick={() => copyToClipboard(key.key_hash)}
                           >
                             <Copy className="w-4 h-4" />
                           </Button>
@@ -556,29 +446,33 @@ const APIManagement = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {key.permissions.map((perm) => (
-                            <Badge key={perm} variant="outline" className="text-xs">
-                              {perm}
+                          {Array.isArray(key.permissions) ? key.permissions.map((perm, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {String(perm)}
                             </Badge>
-                          ))}
+                          )) : (
+                            <Badge variant="outline" className="text-xs">
+                              {String(key.permissions)}
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{key.rate_limit}/h</TableCell>
-                      <TableCell>{key.requests_count.toLocaleString()}</TableCell>
+                      <TableCell>N/A</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(key.status)}>
-                          {key.status}
+                        <Badge variant={getStatusBadgeVariant(key.active)}>
+                          {key.active ? 'Ativa' : 'Inativa'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {key.last_used ? format(new Date(key.last_used), 'dd/MM/yyyy HH:mm') : 'Nunca'}
+                        {key.last_used_at ? format(new Date(key.last_used_at), 'dd/MM/yyyy HH:mm') : 'Nunca'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => revokeApiKey(key.id)}
+                            onClick={() => handleRevokeKey(key.id)}
                             className="text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -596,78 +490,6 @@ const APIManagement = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="endpoints" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Endpoints da API
-              </CardTitle>
-              <CardDescription>
-                Monitore performance e uso dos endpoints
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Endpoint</TableHead>
-                    <TableHead>Método</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Requests Hoje</TableHead>
-                    <TableHead>Tempo Resposta</TableHead>
-                    <TableHead>Taxa de Erro</TableHead>
-                    <TableHead>Último Request</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {endpoints.map((endpoint) => (
-                    <TableRow key={endpoint.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-mono text-sm">{endpoint.path}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {endpoint.description}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getMethodBadgeVariant(endpoint.method)}>
-                          {endpoint.method}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(endpoint.status)}>
-                          {endpoint.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{endpoint.requests_today.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <span className={`${
-                          endpoint.avg_response_time > 1000 ? 'text-red-600' :
-                          endpoint.avg_response_time > 500 ? 'text-orange-600' : 'text-green-600'
-                        }`}>
-                          {endpoint.avg_response_time}ms
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`${
-                          endpoint.error_rate > 5 ? 'text-red-600' :
-                          endpoint.error_rate > 2 ? 'text-orange-600' : 'text-green-600'
-                        }`}>
-                          {endpoint.error_rate}%
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(endpoint.last_request), 'dd/MM/yyyy HH:mm')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="webhooks" className="space-y-6">
           <Card>
@@ -682,10 +504,70 @@ const APIManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-end mb-6">
-                <Button className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Novo Webhook
-                </Button>
+                <Dialog open={isCreateWebhookOpen} onOpenChange={setIsCreateWebhookOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Novo Webhook
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Criar Novo Webhook</DialogTitle>
+                      <DialogDescription>
+                        Configure um webhook para receber notificações de eventos
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Nome</label>
+                        <Input
+                          placeholder="Nome do webhook..."
+                          value={newWebhookName}
+                          onChange={(e) => setNewWebhookName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">URL do Endpoint</label>
+                        <Input
+                          placeholder="https://example.com/webhook"
+                          value={newWebhookUrl}
+                          onChange={(e) => setNewWebhookUrl(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Eventos</label>
+                        <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto">
+                          {availableEvents.map((event) => (
+                            <div key={event} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={event}
+                                checked={newWebhookEvents.includes(event)}
+                                onChange={() => handleEventToggle(event)}
+                              />
+                              <label htmlFor={event} className="text-sm">
+                                {event}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsCreateWebhookOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button 
+                        onClick={handleCreateWebhook}
+                        disabled={createWebhook.isPending}
+                      >
+                        {createWebhook.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Criar Webhook
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <Table>
@@ -720,21 +602,18 @@ const APIManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(webhook.status)}>
-                          {webhook.status}
+                        <Badge variant={getStatusBadgeVariant(webhook.active)}>
+                          {webhook.active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{webhook.deliveries_count.toLocaleString()}</TableCell>
+                      <TableCell>N/A</TableCell>
                       <TableCell>
-                        <span className={`${
-                          webhook.success_rate < 90 ? 'text-red-600' :
-                          webhook.success_rate < 95 ? 'text-orange-600' : 'text-green-600'
-                        }`}>
-                          {webhook.success_rate}%
+                        <span className="text-green-600">
+                          100%
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(webhook.last_delivery), 'dd/MM/yyyy HH:mm')}
+                        {format(new Date(webhook.created_at), 'dd/MM/yyyy HH:mm')}
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm">
