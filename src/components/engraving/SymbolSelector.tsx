@@ -159,9 +159,9 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
 
       {/* Abas por categorias */}
       <Tabs defaultValue={categories[0]?.id || ""} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-3 w-full">
           {categories.map(category => (
-            <TabsTrigger key={category.id} value={category.id} className="text-xs">
+            <TabsTrigger key={category.id} value={category.id} className="text-xs sm:text-sm">
               {category.name}
             </TabsTrigger>
           ))}
