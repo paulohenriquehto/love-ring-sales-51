@@ -7,11 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Package, AlertCircle, CheckCircle, Clock, X } from "lucide-react";
+import { Plus, Package, AlertCircle, CheckCircle, Clock, X, MoreVertical, Edit, Trash2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Product {
@@ -50,6 +52,8 @@ interface Request {
   total_amount: number;
   created_at: string;
   delivery_date_requested: string;
+  department_id?: string;
+  justification?: string;
   requester_profile?: {
     full_name: string;
   };
@@ -74,13 +78,16 @@ export default function Requests() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<Request | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingRequest, setDeletingRequest] = useState<Request | null>(null);
   
   // Form states
   const [newRequest, setNewRequest] = useState({
     title: '',
     description: '',
     department_id: '',
-    priority: 'normal' as const,
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
     delivery_date_requested: '',
     justification: ''
   });
@@ -270,7 +277,7 @@ export default function Requests() {
       title: '',
       description: '',
       department_id: '',
-      priority: 'normal',
+      priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
       delivery_date_requested: '',
       justification: ''
     });
@@ -278,6 +285,159 @@ export default function Requests() {
     setSelectedProduct('');
     setItemQuantity(1);
     setItemNotes('');
+    setEditingRequest(null);
+  };
+
+  const openEditDialog = async (request: Request) => {
+    setEditingRequest(request);
+    setNewRequest({
+      title: request.title,
+      description: request.description,
+      department_id: request.department_id || '',
+      priority: request.priority,
+      delivery_date_requested: request.delivery_date_requested || '',
+      justification: request.justification || ''
+    });
+    
+    // Fetch request items
+    const { data: items } = await supabase
+      .from('request_items')
+      .select('*')
+      .eq('request_id', request.id);
+    
+    if (items) {
+      const formattedItems = items.map(item => ({
+        product_id: item.product_id,
+        product_name: '', // We'll need to fetch this
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price,
+        notes: item.notes
+      }));
+      
+      // Fetch product names
+      for (const item of formattedItems) {
+        const product = products.find(p => p.id === item.product_id);
+        if (product) {
+          item.product_name = product.name;
+        }
+      }
+      
+      setRequestItems(formattedItems);
+    }
+    
+    setIsCreateDialogOpen(true);
+  };
+
+  const updateRequest = async () => {
+    if (!editingRequest) return;
+    
+    try {
+      const totalAmount = getTotalAmount();
+      
+      // Update the main request
+      const { error: requestError } = await supabase
+        .from('requests')
+        .update({
+          title: newRequest.title,
+          description: newRequest.description,
+          department_id: newRequest.department_id || null,
+          priority: newRequest.priority,
+          delivery_date_requested: newRequest.delivery_date_requested || null,
+          justification: newRequest.justification,
+          total_amount: totalAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingRequest.id);
+
+      if (requestError) throw requestError;
+
+      // Delete existing items and recreate them
+      await supabase
+        .from('request_items')
+        .delete()
+        .eq('request_id', editingRequest.id);
+
+      // Insert new items
+      if (requestItems.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('request_items')
+          .insert(
+            requestItems.map(item => ({
+              request_id: editingRequest.id,
+              product_id: item.product_id,
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total_price: item.total_price,
+              notes: item.notes
+            }))
+          );
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Requisição atualizada com sucesso!",
+      });
+
+      setIsCreateDialogOpen(false);
+      resetForm();
+      fetchRequests();
+    } catch (error) {
+      console.error('Erro ao atualizar requisição:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar requisição. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteRequest = async () => {
+    if (!deletingRequest) return;
+    
+    try {
+      // Delete request items first (due to foreign key constraint)
+      await supabase
+        .from('request_items')
+        .delete()
+        .eq('request_id', deletingRequest.id);
+      
+      // Then delete the request
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', deletingRequest.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Requisição excluída com sucesso!",
+      });
+
+      setShowDeleteDialog(false);
+      setDeletingRequest(null);
+      fetchRequests();
+    } catch (error) {
+      console.error('Erro ao excluir requisição:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir requisição. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const canEditRequest = (request: Request) => {
+    return request.status === 'draft' || request.status === 'rejected';
+  };
+
+  const canDeleteRequest = (request: Request) => {
+    return request.status === 'draft';
   };
 
   const getStatusBadge = (status: string) => {
@@ -343,7 +503,10 @@ export default function Requests() {
               Gerencie suas solicitações de produtos e materiais
             </p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) resetForm();
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -352,7 +515,9 @@ export default function Requests() {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Nova Requisição</DialogTitle>
+                <DialogTitle>
+                  {editingRequest ? 'Editar Requisição' : 'Nova Requisição'}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -520,8 +685,8 @@ export default function Requests() {
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={createRequest}>
-                    Criar Requisição
+                  <Button onClick={editingRequest ? updateRequest : createRequest}>
+                    {editingRequest ? 'Atualizar Requisição' : 'Criar Requisição'}
                   </Button>
                 </div>
               </div>
@@ -546,13 +711,41 @@ export default function Requests() {
                       {request.description}
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <Badge {...getPriorityBadge(request.priority)}>
                       {getPriorityBadge(request.priority).label}
                     </Badge>
                     <Badge {...getStatusBadge(request.status)}>
                       {getStatusBadge(request.status).label}
                     </Badge>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => openEditDialog(request)}
+                          disabled={!canEditRequest(request)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setDeletingRequest(request);
+                            setShowDeleteDialog(true);
+                          }}
+                          disabled={!canDeleteRequest(request)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardHeader>
@@ -612,6 +805,27 @@ export default function Requests() {
             </Card>
           )}
         </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir a requisição "{deletingRequest?.title}"?
+                Esta ação não pode ser desfeita e todos os itens da requisição também serão excluídos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={deleteRequest}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
