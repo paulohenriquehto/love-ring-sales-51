@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { FilterBar } from "@/components/FilterBar";
@@ -117,8 +118,7 @@ const Index = () => {
   const [engravingConfigs, setEngravingConfigs] = useState<EngravingConfig[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados do carrinho e filtros
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  // Estados dos filtros e carrinho
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -278,70 +278,6 @@ const Index = () => {
     });
   }, [products, selectedCategory, selectedMaterial, selectedPriceRange]);
 
-  const cartItemsCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-  const handleAddToCart = (product: any, size: string, width?: string, engraving?: EngravingCustomization) => {
-    // Para compatibilidade com o ProductCard existente, tratamos product como um produto transformado
-    const existingItemIndex = cartItems.findIndex(
-      item => item.id === product.id && 
-              item.size === size && 
-              item.width === width &&
-              JSON.stringify(item.engraving) === JSON.stringify(engraving)
-    );
-
-    if (existingItemIndex >= 0) {
-      const newItems = [...cartItems];
-      newItems[existingItemIndex].quantity += 1;
-      setCartItems(newItems);
-    } else {
-      const newItem: CartItem = {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        material: product.material,
-        size: size,
-        width: width,
-        quantity: 1,
-        engraving: engraving
-      };
-      setCartItems([...cartItems, newItem]);
-    }
-
-    const widthText = width ? ` • Largura ${width}` : '';
-    const engravingText = engraving ? ` • Gravação: "${engraving.text}"` : '';
-    toast({
-      title: "Produto adicionado!",
-      description: `${product.name} (Tamanho ${size}${widthText}${engravingText}) foi adicionado ao carrinho.`,
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, size: string, width: string | undefined, quantity: number) => {
-    if (quantity <= 0) {
-      handleRemoveItem(id, size, width);
-      return;
-    }
-
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id && item.size === size && item.width === width
-          ? { ...item, quantity }
-          : item
-      )
-    );
-  };
-
-  const handleRemoveItem = (id: string, size: string, width?: string) => {
-    setCartItems(items =>
-      items.filter(item => !(item.id === id && item.size === size && item.width === width))
-    );
-
-    toast({
-      title: "Produto removido",
-      description: "Item removido do carrinho.",
-    });
-  };
 
   const handleCheckout = () => {
     toast({
@@ -393,8 +329,6 @@ const Index = () => {
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-subtle">
         <Header
-          cartItemsCount={cartItemsCount}
-          cartTotal={cartTotal}
           onCartClick={() => setIsCartOpen(true)}
           employeeName={profile?.full_name || "Usuário"}
         />

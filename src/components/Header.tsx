@@ -3,16 +3,16 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Search, Filter, Menu, User, LogOut } from "lucide-react";
 import logoImage from "@/assets/logo.jpg";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 interface HeaderProps {
-  cartItemsCount: number;
-  cartTotal: number;
   onCartClick: () => void;
   employeeName?: string;
 }
 
-export function Header({ cartItemsCount, cartTotal, onCartClick, employeeName = "Funcionária" }: HeaderProps) {
+export function Header({ onCartClick, employeeName = "Funcionária" }: HeaderProps) {
   const { signOut } = useAuth();
+  const { getTotalItems, getTotalPrice } = useCart();
   return (
     <header className="sticky top-0 z-50 bg-gradient-subtle backdrop-blur-sm border-b border-border/50 shadow-card">
       <div className="container mx-auto px-6 py-4">
@@ -62,7 +62,7 @@ export function Header({ cartItemsCount, cartTotal, onCartClick, employeeName = 
 
             {/* Cart Button */}
             <Button
-              variant="cart"
+              variant="cart-discrete"
               size="tablet"
               onClick={onCartClick}
               className="relative group"
@@ -70,18 +70,18 @@ export function Header({ cartItemsCount, cartTotal, onCartClick, employeeName = 
               <ShoppingCart className="h-5 w-5 mr-2" />
               
               {/* Cart Count Badge */}
-              {cartItemsCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-destructive text-white font-bold min-w-6 h-6 rounded-full flex items-center justify-center text-xs animate-float">
-                  {cartItemsCount}
+              {getTotalItems() > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-primary text-white font-bold min-w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                  {getTotalItems()}
                 </Badge>
               )}
 
               <div className="flex flex-col items-start">
-                <span className="font-bold">
-                  {cartItemsCount} {cartItemsCount === 1 ? 'item' : 'itens'}
+                <span className="font-medium">
+                  {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'itens'}
                 </span>
-                <span className="text-sm opacity-90">
-                  R$ {cartTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                <span className="text-sm opacity-75">
+                  R$ {getTotalPrice().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </Button>

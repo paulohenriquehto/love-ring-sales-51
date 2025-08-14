@@ -20,6 +20,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         luxury: "bg-gradient-elegant text-white font-semibold shadow-elegant hover:shadow-luxury transition-all duration-300",
         cart: "bg-primary text-white font-bold shadow-card hover:bg-primary-glow hover:shadow-luxury transition-all duration-300 animate-float",
+        "cart-discrete": "bg-muted/10 text-muted-foreground border border-border/50 hover:bg-muted/20 hover:text-foreground transition-colors duration-200",
       },
       size: {
         default: "h-12 px-6 py-3",
