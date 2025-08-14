@@ -244,16 +244,17 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
                   </div>
 
                   {/* Engraving Details */}
-                  {(item.engraving_text || item.engraving_font || item.engraving_symbols) && (
-                    <div className="bg-primary/5 rounded-lg p-3 border border-primary/20 mt-3">
-                      <EngravingDisplay
-                        text={item.engraving_text || ""}
-                        font={item.engraving_font || "arial"}
-                        compact={false}
-                        showTitle={true}
-                      />
-                    </div>
-                  )}
+                    {(item.engraving_text || item.engraving_font || item.engraving_symbols) && (
+                      <div className="bg-primary/5 rounded-lg p-3 border border-primary/20 mt-3">
+                        <EngravingDisplay
+                          text={item.engraving_text || ""}
+                          font={item.engraving_font || "arial"}
+                          symbols={item.engraving_symbols ? JSON.parse(item.engraving_symbols) : []}
+                          compact={false}
+                          showTitle={true}
+                        />
+                      </div>
+                    )}
                 </div>
               ))}
             </div>

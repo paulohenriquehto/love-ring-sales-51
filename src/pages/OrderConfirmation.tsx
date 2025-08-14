@@ -259,11 +259,12 @@ const OrderConfirmation = () => {
                         {item.width && ` • Largura ${item.width}`}
                       </p>
                       
-                      {item.engraving_text && (
+                      {(item.engraving_text || item.engraving_symbols) && (
                         <div className="mb-3">
                           <EngravingDisplay
-                            text={item.engraving_text}
+                            text={item.engraving_text || ""}
                             font={item.engraving_font || 'arial'}
+                            symbols={item.engraving_symbols ? JSON.parse(item.engraving_symbols) : []}
                             compact={true}
                             showTitle={false}
                           />

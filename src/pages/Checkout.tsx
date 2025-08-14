@@ -137,7 +137,7 @@ const Checkout = () => {
           total_price: item.price * item.quantity,
           engraving_text: item.engraving?.text,
           engraving_font: item.engraving?.font,
-          engraving_symbols: null // Removido no MVP - apenas texto
+          engraving_symbols: item.engraving?.symbols ? JSON.stringify(item.engraving.symbols) : undefined
         }))
       };
 
@@ -398,16 +398,17 @@ const Checkout = () => {
                           {item.width && ` • Largura ${item.width}`}
                         </p>
                         
-                        {item.engraving && (
-                          <div className="mt-2">
-                            <EngravingDisplay
-                              text={item.engraving.text}
-                              font={item.engraving.font}
-                              compact={true}
-                              showTitle={false}
-                            />
-                          </div>
-                        )}
+                    {item.engraving && (
+                      <div className="mt-2">
+                        <EngravingDisplay
+                          text={item.engraving.text}
+                          font={item.engraving.font}
+                          symbols={item.engraving.symbols}
+                          compact={true}
+                          showTitle={false}
+                        />
+                      </div>
+                    )}
                         
                         <div className="flex justify-between items-center">
                           <Badge variant="secondary">Qtd: {item.quantity}</Badge>

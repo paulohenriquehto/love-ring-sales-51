@@ -206,12 +206,13 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
         {/* Engraving Preview */}
         {pendingEngraving && (
           <div className="mb-3 p-3 bg-gradient-subtle border border-primary/20 rounded-lg">
-            <EngravingDisplay
-              text={pendingEngraving.text}
-              font={pendingEngraving.font}
-              compact={true}
-              showTitle={true}
-            />
+          <EngravingDisplay
+            text={pendingEngraving.text}
+            font={pendingEngraving.font}
+            symbols={pendingEngraving.symbols}
+            compact={true}
+            showTitle={true}
+          />
           </div>
         )}
 

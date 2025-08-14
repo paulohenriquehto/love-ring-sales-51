@@ -89,6 +89,7 @@ export function Cart({ isOpen, onClose }: CartProps) {
                           <EngravingDisplay
                             text={item.engraving.text}
                             font={item.engraving.font}
+                            symbols={item.engraving.symbols}
                             compact={true}
                             showTitle={true}
                           />

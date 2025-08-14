@@ -1,10 +1,37 @@
-// Tipos simplificados para MVP - apenas texto e fontes
+// Tipos para sistema completo - texto, fontes e símbolos
 
 export interface EngravingCustomization {
   text: string;
   font: string;
+  symbols: string[];
   productId: string;
   variantId?: string;
+}
+
+export interface EngravingCategory {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  image_url?: string;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EngravingSymbol {
+  id: string;
+  category_id: string;
+  name: string;
+  unicode_char?: string;
+  svg_content?: string;
+  image_url?: string;
+  icon_path?: string;
+  price_adjustment?: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EngravingConfig {
