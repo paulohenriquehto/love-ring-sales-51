@@ -451,8 +451,8 @@ const AuditLogs = () => {
               </SelectContent>
             </Select>
             <DatePickerWithRange 
-              dateRange={dateRange} 
-              onDateRangeChange={setDateRange}
+              value={dateRange} 
+              onChange={setDateRange}
             />
           </div>
 

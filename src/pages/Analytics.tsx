@@ -247,8 +247,8 @@ const Analytics = () => {
         </div>
         <div className="flex gap-3">
           <DatePickerWithRange 
-            dateRange={dateRange} 
-            onDateRangeChange={setDateRange}
+            value={dateRange} 
+            onChange={setDateRange}
           />
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
             <SelectTrigger className="w-48">
