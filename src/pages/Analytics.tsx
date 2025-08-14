@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
@@ -83,22 +84,33 @@ const Analytics = () => {
     try {
       setLoading(true);
       
-      // Simulate analytics data - in production this would come from analytics engine
-      const mockMetrics: AnalyticsMetrics = {
-        totalRevenue: 245678.90,
-        totalOrders: 1234,
-        totalProducts: 567,
-        totalUsers: 89,
-        avgOrderValue: 199.20,
-        conversionRate: 12.5,
-        monthlyGrowth: 18.7,
-        topSellingProducts: [
-          { name: 'Anel de Ouro 18k', sales: 45, revenue: 15678.90 },
-          { name: 'Colar de Prata', sales: 38, revenue: 8945.20 },
-          { name: 'Brincos de Diamante', sales: 32, revenue: 21456.80 },
-          { name: 'Pulseira Personalizada', sales: 28, revenue: 5678.40 },
-          { name: 'Relógio Casual', sales: 25, revenue: 7890.50 }
-        ],
+      // Load real analytics from database
+      const { data: metricsData } = await supabase
+        .from('analytics_metrics')
+        .select('*')
+        .eq('date', new Date().toISOString().split('T')[0]);
+
+      const { data: topProducts } = await supabase
+        .from('top_selling_products')
+        .select('*, products(name)')
+        .order('total_revenue', { ascending: false })
+        .limit(5);
+
+      const getMetric = (type: string) => metricsData?.find(m => m.metric_type === type)?.value || 0;
+
+      const realMetrics: AnalyticsMetrics = {
+        totalRevenue: getMetric('total_revenue'),
+        totalOrders: getMetric('total_orders'),
+        totalProducts: getMetric('total_products'),
+        totalUsers: getMetric('total_users') || 89,
+        avgOrderValue: getMetric('average_order_value'),
+        conversionRate: getMetric('conversion_rate'),
+        monthlyGrowth: getMetric('monthly_growth'),
+        topSellingProducts: topProducts?.map(p => ({
+          name: p.products.name,
+          sales: p.total_quantity,
+          revenue: p.total_revenue
+        })) || [],
         salesByDepartment: [
           { department: 'Joias', sales: 156, target: 150 },
           { department: 'Relógios', sales: 89, target: 100 },
@@ -112,7 +124,7 @@ const Analytics = () => {
         }))
       };
 
-      setMetrics(mockMetrics);
+      setMetrics(realMetrics);
     } catch (error) {
       console.error('Error loading analytics:', error);
       toast({
