@@ -1,6 +1,30 @@
 import { supabase } from '@/integrations/supabase/client';
 import { type Order, type CreateOrderData } from '@/types/order';
 
+export interface SearchOrdersParams {
+  search?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  deliveryMethod?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface OrdersResponse {
+  orders: Order[];
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface SalesMetrics {
+  totalSales: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  pendingOrders: number;
+  completedOrders: number;
+}
+
 export async function createOrder(orderData: CreateOrderData): Promise<Order> {
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -90,4 +114,106 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
   }
 
   return (orders || []) as Order[];
+}
+
+export async function searchOrders(params: SearchOrdersParams): Promise<OrdersResponse> {
+  const { search = '', status = '', dateFrom = '', dateTo = '', deliveryMethod = '', page = 1, limit = 10 } = params;
+  
+  let query = (supabase as any)
+    .from('orders')
+    .select(`
+      *,
+      order_items (*)
+    `, { count: 'exact' });
+
+  // Apply search filters
+  if (search) {
+    query = query.or(`customer_cpf.ilike.%${search}%,customer_name.ilike.%${search}%,order_number.ilike.%${search}%`);
+  }
+
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  if (deliveryMethod) {
+    query = query.eq('delivery_method', deliveryMethod);
+  }
+
+  if (dateFrom) {
+    query = query.gte('created_at', dateFrom);
+  }
+
+  if (dateTo) {
+    query = query.lte('created_at', dateTo);
+  }
+
+  // Apply pagination
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  
+  query = query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  const { data: orders, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Erro ao buscar pedidos: ${error.message}`);
+  }
+
+  const totalPages = Math.ceil((count || 0) / limit);
+
+  return {
+    orders: (orders || []) as Order[],
+    totalCount: count || 0,
+    totalPages
+  };
+}
+
+export async function getSalesMetrics(): Promise<SalesMetrics> {
+  const { data: orders, error } = await (supabase as any)
+    .from('orders')
+    .select('total, status');
+
+  if (error) {
+    throw new Error(`Erro ao buscar métricas: ${error.message}`);
+  }
+
+  const totalSales = orders?.reduce((sum: number, order: any) => sum + parseFloat(order.total || 0), 0) || 0;
+  const totalOrders = orders?.length || 0;
+  const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+  const pendingOrders = orders?.filter((order: any) => order.status === 'pending').length || 0;
+  const completedOrders = orders?.filter((order: any) => order.status === 'completed').length || 0;
+
+  return {
+    totalSales,
+    totalOrders,
+    averageOrderValue,
+    pendingOrders,
+    completedOrders
+  };
+}
+
+export async function getTopProducts(limit: number = 5) {
+  const { data: items, error } = await (supabase as any)
+    .from('order_items')
+    .select('product_name, quantity, total_price');
+
+  if (error) {
+    throw new Error(`Erro ao buscar produtos mais vendidos: ${error.message}`);
+  }
+
+  const productStats = items?.reduce((acc: any, item: any) => {
+    const name = item.product_name;
+    if (!acc[name]) {
+      acc[name] = { name, quantity: 0, revenue: 0 };
+    }
+    acc[name].quantity += item.quantity;
+    acc[name].revenue += parseFloat(item.total_price || 0);
+    return acc;
+  }, {}) || {};
+
+  return Object.values(productStats)
+    .sort((a: any, b: any) => b.quantity - a.quantity)
+    .slice(0, limit);
 }

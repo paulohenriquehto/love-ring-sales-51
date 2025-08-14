@@ -379,6 +379,7 @@ export type Database = {
           discount: number
           id: string
           notes: string | null
+          order_number: string | null
           status: string
           subtotal: number
           total: number
@@ -395,6 +396,7 @@ export type Database = {
           discount?: number
           id?: string
           notes?: string | null
+          order_number?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -411,6 +413,7 @@ export type Database = {
           discount?: number
           id?: string
           notes?: string | null
+          order_number?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -959,7 +962,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_order_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       request_priority: "low" | "normal" | "high" | "urgent"
