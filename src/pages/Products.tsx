@@ -50,7 +50,12 @@ const Products = () => {
         </Dialog>
       </div>
 
-      <ProductList onEditProduct={handleEditProduct} />
+      <ProductList 
+        onEditProduct={handleEditProduct} 
+        onProductDeleted={() => {
+          // Refresh opcional - a lista já se atualiza automaticamente
+        }}
+      />
     </div>
   );
 };

@@ -5,13 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Edit, Eye, Package, Filter } from 'lucide-react';
+import { Search, Edit, Eye, Package, Filter, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductListProps {
   onEditProduct: (product: any) => void;
+  onProductDeleted?: () => void;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ onEditProduct }) => {
+const ProductList: React.FC<ProductListProps> = ({ onEditProduct, onProductDeleted }) => {
+  const { toast } = useToast();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -87,6 +91,42 @@ const ProductList: React.FC<ProductListProps> = ({ onEditProduct }) => {
 
   const getVariantCount = (product: any) => {
     return product.product_variants?.length || 0;
+  };
+
+  const handleDeleteProduct = async (product: any) => {
+    try {
+      // Desativar produto (soft delete)
+      const { error: productError } = await supabase
+        .from('products')
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq('id', product.id);
+
+      if (productError) throw productError;
+
+      // Desativar todas as variantes do produto
+      const { error: variantError } = await supabase
+        .from('product_variants')
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq('product_id', product.id);
+
+      if (variantError) throw variantError;
+
+      toast({
+        title: "Produto excluído",
+        description: `${product.name} foi removido com sucesso.`,
+      });
+
+      // Recarregar a lista de produtos
+      loadProducts();
+      onProductDeleted?.();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir produto",
+        description: "Não foi possível excluir o produto. Tente novamente.",
+      });
+    }
   };
 
   if (loading) {
@@ -220,6 +260,39 @@ const ProductList: React.FC<ProductListProps> = ({ onEditProduct }) => {
                   <Button variant="outline" size="sm">
                     <Eye className="h-4 w-4" />
                   </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o produto <strong>{product.name}</strong>?
+                          <br />
+                          <br />
+                          <span className="text-xs text-muted-foreground">
+                            SKU: {product.sku} • {getVariantCount(product)} variante{getVariantCount(product) !== 1 ? 's' : ''}
+                          </span>
+                          <br />
+                          <br />
+                          O produto será desativado mas mantido no histórico de pedidos. Esta ação pode ser revertida posteriormente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteProduct(product)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Excluir Produto
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>
