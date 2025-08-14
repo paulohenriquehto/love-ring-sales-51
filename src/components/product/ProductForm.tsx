@@ -116,13 +116,20 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onProductSaved }) =>
     try {
       const { supports_engraving, max_characters, price_adjustment, available_fonts, ...productData } = data;
       
+      // Clean UUID fields - convert empty strings to null
+      const cleanedProductData = {
+        ...productData,
+        supplier_id: productData.supplier_id === '' ? null : productData.supplier_id,
+        category_id: productData.category_id === '' ? null : productData.category_id,
+      };
+      
       let currentProductId = productId;
       
       if (product) {
         // Update product
         const { error } = await supabase
           .from('products')
-          .update(productData)
+          .update(cleanedProductData)
           .eq('id', product.id);
         
         if (error) throw error;
@@ -131,7 +138,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onProductSaved }) =>
         // Create new product
         const { data: newProduct, error } = await supabase
           .from('products')
-          .insert(productData)
+          .insert(cleanedProductData)
           .select()
           .single();
         
