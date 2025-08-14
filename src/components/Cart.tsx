@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { X, Minus, Plus, ShoppingBag, CreditCard, Smartphone, Paintbrush } from "lucide-react";
 import { useState } from "react";
-import { type EngravingCustomization } from "@/types/engraving";
+import { type EngravingCustomization, type SelectedSymbol } from "@/types/engraving";
+import { EngravingDisplay } from "@/components/engraving/EngravingDisplay";
 
 interface CartItem {
   id: string;
@@ -15,7 +16,9 @@ interface CartItem {
   size: string;
   width?: string;
   quantity: number;
-  engraving?: EngravingCustomization;
+  engraving?: EngravingCustomization & {
+    selectedSymbols?: SelectedSymbol[];
+  };
 }
 
 interface CartProps {
@@ -97,13 +100,14 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
 
                       {/* Engraving Details */}
                       {item.engraving && (
-                        <div className="bg-muted/50 rounded-lg p-2 border-l-2 border-primary">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Paintbrush className="h-3 w-3 text-primary" />
-                            <span className="text-xs font-medium text-primary">Gravação Personalizada</span>
-                          </div>
-                          <p className="text-sm text-foreground font-medium">"{item.engraving.text}"</p>
-                          <p className="text-xs text-muted-foreground">Fonte: {item.engraving.font}</p>
+                        <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+                          <EngravingDisplay
+                            text={item.engraving.text}
+                            font={item.engraving.font}
+                            selectedSymbols={item.engraving.selectedSymbols || []}
+                            compact={true}
+                            showTitle={true}
+                          />
                         </div>
                       )}
 
