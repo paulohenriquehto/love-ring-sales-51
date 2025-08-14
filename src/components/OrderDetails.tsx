@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Order } from '@/types/order';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { User, Phone, Mail, MapPin, Package, FileText, Printer, Edit3 } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Package, FileText, Printer, Edit3, CreditCard, Zap, Banknote } from 'lucide-react';
 import { EngravingDisplay } from '@/components/engraving/EngravingDisplay';
 import type { SelectedSymbol } from '@/types/engraving';
 
@@ -53,6 +53,38 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
       console.error('Error parsing engraving symbols:', error);
       return [];
     }
+  };
+
+  const getPaymentMethodIcon = (method?: string) => {
+    switch (method) {
+      case 'pix': return <Zap className="h-4 w-4 text-muted-foreground" />;
+      case 'credit_card': return <CreditCard className="h-4 w-4 text-muted-foreground" />;
+      case 'debit_card': return <CreditCard className="h-4 w-4 text-muted-foreground" />;
+      case 'cash': return <Banknote className="h-4 w-4 text-muted-foreground" />;
+      default: return <FileText className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getPaymentMethodText = (method?: string) => {
+    switch (method) {
+      case 'pix': return 'PIX';
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'debit_card': return 'Cartão de Débito';
+      case 'cash': return 'Dinheiro';
+      default: return 'Não informado';
+    }
+  };
+
+  const formatPaymentInfo = (order: Order) => {
+    if (!order.payment_method) return 'Não informado';
+    
+    const methodText = getPaymentMethodText(order.payment_method);
+    
+    if (order.payment_method === 'credit_card' && order.installments && order.installments > 1) {
+      return `${methodText} - ${order.installments}x de R$ ${parseFloat(order.installment_value?.toString() || '0').toFixed(2)}`;
+    }
+    
+    return methodText;
   };
 
   const handlePrint = () => {
@@ -170,6 +202,24 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
                 <p className="font-medium">{order.notes}</p>
               </div>
             )}
+          </div>
+
+          <Separator />
+
+          {/* Payment Info */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              {getPaymentMethodIcon(order.payment_method)}
+              Informações de Pagamento
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              {getPaymentMethodIcon(order.payment_method)}
+              <div>
+                <p className="text-sm text-muted-foreground">Método de Pagamento</p>
+                <p className="font-medium">{formatPaymentInfo(order)}</p>
+              </div>
+            </div>
           </div>
 
           <Separator />

@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getOrderById } from '@/lib/orders';
 import { type Order, type OrderItem } from '@/types/order';
 import { EngravingDisplay } from '@/components/engraving/EngravingDisplay';
-import { CheckCircle, Download, Home, Mail, Phone, Calendar, Package } from 'lucide-react';
+import { CheckCircle, Download, Home, Mail, Phone, Calendar, Package, CreditCard, Zap, Banknote } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const OrderConfirmation = () => {
@@ -60,6 +60,38 @@ const OrderConfirmation = () => {
       case 'cancelled': return 'Cancelado';
       default: return 'Desconhecido';
     }
+  };
+
+  const getPaymentMethodIcon = (method?: string) => {
+    switch (method) {
+      case 'pix': return <Zap className="h-4 w-4 text-primary" />;
+      case 'credit_card': return <CreditCard className="h-4 w-4 text-primary" />;
+      case 'debit_card': return <CreditCard className="h-4 w-4 text-primary" />;
+      case 'cash': return <Banknote className="h-4 w-4 text-primary" />;
+      default: return <Package className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const getPaymentMethodText = (method?: string) => {
+    switch (method) {
+      case 'pix': return 'PIX';
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'debit_card': return 'Cartão de Débito';
+      case 'cash': return 'Dinheiro';
+      default: return 'Não informado';
+    }
+  };
+
+  const formatPaymentInfo = (order: Order) => {
+    if (!order.payment_method) return 'Não informado';
+    
+    const methodText = getPaymentMethodText(order.payment_method);
+    
+    if (order.payment_method === 'credit_card' && order.installments && order.installments > 1) {
+      return `${methodText} - ${order.installments}x de R$ ${parseFloat(order.installment_value?.toString() || '0').toFixed(2)}`;
+    }
+    
+    return methodText;
   };
 
   if (loading) {
@@ -139,6 +171,14 @@ const OrderConfirmation = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Entrega:</span>
                     <span>{order.delivery_method === 'pickup' ? '🏠 Retirar na loja' : '🚚 Entregar'}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pagamento:</span>
+                    <span className="flex items-center gap-2">
+                      {getPaymentMethodIcon(order.payment_method)}
+                      {formatPaymentInfo(order)}
+                    </span>
                   </div>
                   
                   <div className="flex justify-between items-start">

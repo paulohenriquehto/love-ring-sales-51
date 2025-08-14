@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
-import { ShoppingBag, TrendingUp, DollarSign, Package, Download, Eye, Loader2 } from 'lucide-react';
+import { ShoppingBag, TrendingUp, DollarSign, Package, Download, Eye, Loader2, CreditCard, Zap, Banknote } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SearchBar, SearchFilters } from '@/components/SearchBar';
 import { OrderDetails } from '@/components/OrderDetails';
@@ -122,6 +122,25 @@ const Reports = () => {
       cancelled: 'Cancelado'
     };
     return statusMap[status as keyof typeof statusMap] || status;
+  };
+
+  const getPaymentText = (order: Order) => {
+    if (!order.payment_method) return 'Não informado';
+    
+    const methodMap = {
+      pix: 'PIX',
+      credit_card: 'Cartão de Crédito',
+      debit_card: 'Cartão de Débito',
+      cash: 'Dinheiro'
+    };
+    
+    const methodText = methodMap[order.payment_method as keyof typeof methodMap] || order.payment_method;
+    
+    if (order.payment_method === 'credit_card' && order.installments && order.installments > 1) {
+      return `${methodText} ${order.installments}x`;
+    }
+    
+    return methodText;
   };
 
   const handleViewOrder = (order: Order) => {
@@ -251,6 +270,7 @@ const Reports = () => {
                       <TableHead>Cliente</TableHead>
                       <TableHead>CPF</TableHead>
                       <TableHead>Total</TableHead>
+                      <TableHead>Pagamento</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Entrega</TableHead>
                       <TableHead>Ações</TableHead>
@@ -259,7 +279,7 @@ const Reports = () => {
                   <TableBody>
                     {orders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           Nenhum pedido encontrado
                         </TableCell>
                       </TableRow>
@@ -275,6 +295,9 @@ const Reports = () => {
                           <TableCell>{order.customer_name}</TableCell>
                           <TableCell className="font-mono">{order.customer_cpf}</TableCell>
                           <TableCell>R$ {parseFloat(order.total.toString()).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <span className="text-sm">{getPaymentText(order)}</span>
+                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(order.status)}>
                               {getStatusText(order.status)}
