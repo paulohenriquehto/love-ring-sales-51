@@ -468,6 +468,82 @@ async function processProduct(
     throw new Error('SKU deve ter no máximo 100 caracteres');
   }
 
+  // Intelligent variant detection - Check if this is a width variant
+  const productNamePattern = productData.name.replace(/ - \d+mm$/, '');
+  const widthMatch = productData.name.match(/ - (\d+mm)$/);
+  
+  if (widthMatch && productNamePattern !== productData.name) {
+    // This looks like a variant, try to find existing product
+    const { data: existingProduct } = await supabase
+      .from('products')
+      .select('id, base_price')
+      .eq('name', productNamePattern)
+      .maybeSingle();
+    
+    if (existingProduct) {
+      // Generate unique SKU for variant
+      const baseVariantSku = `${productData.sku || 'PROD'}-${widthMatch[1].toUpperCase()}`;
+      let uniqueVariantSku = baseVariantSku;
+      let counter = 1;
+      
+      // Check for existing SKU and make it unique
+      while (true) {
+        const { data: existingSku } = await supabase
+          .from('product_variants')
+          .select('id')
+          .eq('sku_variant', uniqueVariantSku)
+          .maybeSingle();
+        
+        if (!existingSku) break;
+        uniqueVariantSku = `${baseVariantSku}-${counter}`;
+        counter++;
+      }
+      
+      // Create variant instead of new product
+      const variantData = {
+        product_id: existingProduct.id,
+        width: widthMatch[1],
+        price_adjustment: (productData.base_price || 0) - (existingProduct.base_price || 0),
+        sku_variant: uniqueVariantSku,
+        active: true
+      };
+      
+      const { data: newVariant, error: variantError } = await supabase
+        .from('product_variants')
+        .insert(variantData)
+        .select('id')
+        .single();
+      
+      if (variantError) {
+        console.error(`Erro ao criar variante para ${productData.name}:`, variantError);
+        throw new Error(`Erro ao criar variante: ${variantError.message}`);
+      }
+      
+      console.log(`Variante criada: ${productData.name} -> ${productNamePattern} (${widthMatch[1]})`);
+      
+      successLog.push({
+        product: productData.name,
+        sku: uniqueVariantSku,
+        id: newVariant.id,
+        status: 'Variante criada',
+        parent_product: productNamePattern
+      });
+      
+      // Process images for this variant
+      if (productData.images) {
+        const imageUrls = productData.images.split(',').map((url: string) => url.trim()).filter(Boolean);
+        if (imageUrls.length > 0) {
+          await processProductImages(existingProduct.id, imageUrls, newVariant.id);
+        }
+      }
+      
+      return; // Skip creating new product
+    } else {
+      // Create new product with base name (without width)
+      productData.name = productNamePattern;
+    }
+  }
+
   // Handle category
   let categoryId = null;
   if (productData.category && config.categoryCreation) {
