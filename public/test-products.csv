@@ -1,0 +1,11 @@
+product_name,sku,description,regular_price,weight,category,stock_quantity,images,size,color,material
+"Anel de Ouro 18k",ANL001,"Anel em ouro 18k com acabamento polido",299.99,15.5,"Anéis",10,"https://example.com/anel-ouro.jpg",16,"Dourado","Ouro 18k"
+"Anel de Prata 925",ANL002,"Anel em prata 925 sterling",89.90,12.3,"Anéis",25,"https://example.com/anel-prata.jpg",18,"Prateado","Prata 925"
+"Anel Titânio Sport",ANL003,"Anel esportivo em titânio resistente",149.90,8.7,"Anéis",15,"https://example.com/anel-titanio.jpg",20,"Cinza","Titânio"
+"Pulseira Dourada",PUL001,"Pulseira elegante em ouro 18k",459.99,25.8,"Pulseiras",5,"https://example.com/pulseira-ouro.jpg",M,"Dourado","Ouro 18k"
+"Corrente Prata",COR001,"Corrente em prata 925 com 60cm",129.90,18.2,"Correntes",20,"https://example.com/corrente-prata.jpg",60cm,"Prateado","Prata 925"
+"Brinco Diamante",BRI001,"Brinco com pequenos diamantes",899.99,3.2,"Brincos",8,"https://example.com/brinco-diamante.jpg",P,"Transparente","Ouro Branco"
+"Relógio Dourado",REL001,"Relógio clássico banhado a ouro",199.90,45.5,"Relógios",12,"https://example.com/relogio-ouro.jpg",42mm,"Dourado","Aço Inox"
+"Pingente Coração",PIN001,"Pingente em formato de coração",79.90,5.1,"Pingentes",30,"https://example.com/pingente-coracao.jpg",P,"Dourado","Ouro 18k"
+"Aliança Clássica",ALI001,"Aliança tradicional lisa",259.90,6.8,"Alianças",18,"https://example.com/alianca-classica.jpg",16,"Dourado","Ouro 18k"
+"Tornozeleira Prata",TOR001,"Tornozeleira delicada em prata",69.90,8.9,"Tornozeleiras",22,"https://example.com/tornozeleira-prata.jpg",25cm,"Prateado","Prata 925"
