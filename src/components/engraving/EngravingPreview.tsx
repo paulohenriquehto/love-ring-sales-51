@@ -7,9 +7,10 @@ interface EngravingPreviewProps {
   text: string;
   font: FontValue;
   symbols?: string[];
+  symbolPosition?: 'before' | 'middle' | 'after';
 }
 
-export function EngravingPreview({ text, font, symbols = [] }: EngravingPreviewProps) {
+export function EngravingPreview({ text, font, symbols = [], symbolPosition = 'after' }: EngravingPreviewProps) {
   const { fontOptions } = useFonts();
   const [symbolsData, setSymbolsData] = useState<EngravingSymbol[]>([]);
   
@@ -37,6 +38,75 @@ export function EngravingPreview({ text, font, symbols = [] }: EngravingPreviewP
     }
   };
 
+  const renderSymbols = () => {
+    return symbolsData.map(symbol => (
+      <img
+        key={symbol.id}
+        src={symbol.image_url || ''}
+        alt={symbol.name}
+        className="w-6 h-6 object-contain"
+        title={symbol.name}
+      />
+    ));
+  };
+
+  const renderEngravingContent = () => {
+    const textElement = text ? (
+      <span className={`${fontConfig?.className || 'font-sans'} text-lg text-foreground`}>
+        {symbolPosition === 'middle' ? renderTextWithMiddleSymbols() : text}
+      </span>
+    ) : null;
+
+    const symbolElements = symbols.length > 0 && symbolPosition !== 'middle' ? renderSymbols() : null;
+
+    switch (symbolPosition) {
+      case 'before':
+        return (
+          <>
+            {symbolElements}
+            {textElement}
+          </>
+        );
+      case 'middle':
+        return textElement; // Símbolos já inseridos no meio do texto
+      case 'after':
+      default:
+        return (
+          <>
+            {textElement}
+            {symbolElements}
+          </>
+        );
+    }
+  };
+
+  const renderTextWithMiddleSymbols = () => {
+    if (!text || symbols.length === 0) return text;
+    
+    const words = text.split(' ');
+    if (words.length === 1) {
+      // Se só tem uma palavra, coloca símbolos no final
+      return (
+        <>
+          {text}
+          {renderSymbols()}
+        </>
+      );
+    }
+    
+    // Insere símbolos entre a primeira e segunda palavra
+    const firstWord = words[0];
+    const restOfText = words.slice(1).join(' ');
+    
+    return (
+      <>
+        {firstWord}
+        {renderSymbols()}
+        {restOfText}
+      </>
+    );
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -47,28 +117,8 @@ export function EngravingPreview({ text, font, symbols = [] }: EngravingPreviewP
       
       <div className="border border-border rounded-lg p-4 bg-background min-h-[80px] flex items-center justify-center">
         {text || symbols.length > 0 ? (
-          <div className="flex flex-col items-center justify-center space-y-3">
-            {/* Texto */}
-            {text && (
-              <span className={`${fontConfig?.className || 'font-sans'} text-lg text-foreground`}>
-                {text}
-              </span>
-            )}
-            
-            {/* Símbolos */}
-            {symbols.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap justify-center">
-                {symbolsData.map(symbol => (
-                  <img
-                    key={symbol.id}
-                    src={symbol.image_url || ''}
-                    alt={symbol.name}
-                    className="w-6 h-6 object-contain"
-                    title={symbol.name}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="flex items-center justify-center flex-wrap gap-2">
+            {renderEngravingContent()}
           </div>
         ) : (
           <p className="text-muted-foreground text-sm">

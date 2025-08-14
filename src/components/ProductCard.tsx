@@ -210,6 +210,7 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
             text={pendingEngraving.text}
             font={pendingEngraving.font}
             symbols={pendingEngraving.symbols}
+            symbolPosition={pendingEngraving.symbolPosition}
             compact={true}
             showTitle={true}
           />

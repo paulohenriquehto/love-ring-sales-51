@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { EngravingPreview } from "./EngravingPreview";
 import { FontSelector } from "./FontSelector";
 import { SymbolSelector } from "./SymbolSelector";
@@ -29,6 +30,9 @@ export function EngravingCustomizer({
   const [text, setText] = useState(existingCustomization?.text || "");
   const [font, setFont] = useState<FontValue>(existingCustomization?.font || "arial");
   const [symbols, setSymbols] = useState<string[]>(existingCustomization?.symbols || []);
+  const [symbolPosition, setSymbolPosition] = useState<'before' | 'middle' | 'after'>(
+    existingCustomization?.symbolPosition || 'after'
+  );
 
   const handleConfirm = () => {
     if (!text.trim() && symbols.length === 0) return;
@@ -37,6 +41,7 @@ export function EngravingCustomizer({
       text: text.trim(),
       font,
       symbols,
+      symbolPosition,
       productId,
       variantId
     });
@@ -103,6 +108,39 @@ export function EngravingCustomizer({
               selectedSymbols={symbols}
               onChange={setSymbols}
             />
+            
+            {/* Controle de posicionamento de símbolos */}
+            {symbols.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label className="text-sm font-medium">
+                  Posição dos símbolos:
+                </Label>
+                <RadioGroup
+                  value={symbolPosition}
+                  onValueChange={(value: 'before' | 'middle' | 'after') => setSymbolPosition(value)}
+                  className="grid grid-cols-1 gap-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="before" id="before" />
+                    <Label htmlFor="before" className="text-sm cursor-pointer">
+                      Antes do nome
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="middle" id="middle" />
+                    <Label htmlFor="middle" className="text-sm cursor-pointer">
+                      No meio do nome
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="after" id="after" />
+                    <Label htmlFor="after" className="text-sm cursor-pointer">
+                      Após o nome
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -112,6 +150,7 @@ export function EngravingCustomizer({
             text={text} 
             font={font}
             symbols={symbols}
+            symbolPosition={symbolPosition}
           />
         </div>
 

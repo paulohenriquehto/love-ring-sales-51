@@ -7,6 +7,7 @@ interface EngravingDisplayProps {
   text: string;
   font: FontValue;
   symbols?: string[];
+  symbolPosition?: 'before' | 'middle' | 'after';
   compact?: boolean;
   showTitle?: boolean;
 }
@@ -15,6 +16,7 @@ export function EngravingDisplay({
   text, 
   font,
   symbols = [],
+  symbolPosition = 'after',
   compact = false,
   showTitle = true 
 }: EngravingDisplayProps) {
@@ -45,6 +47,77 @@ export function EngravingDisplay({
     }
   };
 
+  const renderSymbols = () => {
+    return symbolsData.map(symbol => (
+      <img
+        key={symbol.id}
+        src={symbol.image_url || ''}
+        alt={symbol.name}
+        className={`object-contain ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
+        title={symbol.name}
+      />
+    ));
+  };
+
+  const renderEngravingContent = () => {
+    const textElement = text ? (
+      <span className={`${fontConfig?.className || 'font-sans'} ${
+        compact ? 'text-sm' : 'text-lg'
+      } text-foreground font-medium`}>
+        {symbolPosition === 'middle' ? renderTextWithMiddleSymbols() : `"${text}"`}
+      </span>
+    ) : null;
+
+    const symbolElements = symbols.length > 0 && symbolPosition !== 'middle' ? renderSymbols() : null;
+
+    switch (symbolPosition) {
+      case 'before':
+        return (
+          <>
+            {symbolElements}
+            {textElement}
+          </>
+        );
+      case 'middle':
+        return textElement; // Símbolos já inseridos no meio do texto
+      case 'after':
+      default:
+        return (
+          <>
+            {textElement}
+            {symbolElements}
+          </>
+        );
+    }
+  };
+
+  const renderTextWithMiddleSymbols = () => {
+    if (!text || symbols.length === 0) return `"${text}"`;
+    
+    const words = text.split(' ');
+    if (words.length === 1) {
+      // Se só tem uma palavra, coloca símbolos no final
+      return (
+        <>
+          "{text}"
+          {renderSymbols()}
+        </>
+      );
+    }
+    
+    // Insere símbolos entre a primeira e segunda palavra
+    const firstWord = words[0];
+    const restOfText = words.slice(1).join(' ');
+    
+    return (
+      <>
+        "{firstWord}
+        {renderSymbols()}
+        {restOfText}"
+      </>
+    );
+  };
+
   if (!text && symbols.length === 0) return null;
 
   return (
@@ -56,30 +129,8 @@ export function EngravingDisplay({
       <div className={`border border-border rounded-lg p-3 bg-background ${
         compact ? 'min-h-[60px]' : 'min-h-[80px]'
       } flex items-center justify-center`}>
-        <div className="flex flex-col items-center justify-center space-y-2">
-          {/* Texto */}
-          {text && (
-            <span className={`${fontConfig?.className || 'font-sans'} ${
-              compact ? 'text-sm' : 'text-lg'
-            } text-foreground font-medium`}>
-              "{text}"
-            </span>
-          )}
-          
-          {/* Símbolos */}
-          {symbols.length > 0 && (
-            <div className="flex items-center gap-1 flex-wrap justify-center">
-              {symbolsData.map(symbol => (
-                <img
-                  key={symbol.id}
-                  src={symbol.image_url || ''}
-                  alt={symbol.name}
-                  className={`object-contain ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
-                  title={symbol.name}
-                />
-              ))}
-            </div>
-          )}
+        <div className="flex items-center justify-center flex-wrap gap-1">
+          {renderEngravingContent()}
         </div>
       </div>
       

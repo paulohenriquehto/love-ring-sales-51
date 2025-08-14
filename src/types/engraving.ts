@@ -4,6 +4,7 @@ export interface EngravingCustomization {
   text: string;
   font: string;
   symbols: string[];
+  symbolPosition: 'before' | 'middle' | 'after';
   productId: string;
   variantId?: string;
 }

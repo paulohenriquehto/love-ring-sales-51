@@ -250,6 +250,7 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
                           text={item.engraving_text || ""}
                           font={item.engraving_font || "arial"}
                           symbols={item.engraving_symbols ? JSON.parse(item.engraving_symbols) : []}
+                          symbolPosition="after"
                           compact={false}
                           showTitle={true}
                         />

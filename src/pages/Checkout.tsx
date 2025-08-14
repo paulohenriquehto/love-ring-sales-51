@@ -404,6 +404,7 @@ const Checkout = () => {
                           text={item.engraving.text}
                           font={item.engraving.font}
                           symbols={item.engraving.symbols}
+                          symbolPosition={item.engraving.symbolPosition}
                           compact={true}
                           showTitle={false}
                         />

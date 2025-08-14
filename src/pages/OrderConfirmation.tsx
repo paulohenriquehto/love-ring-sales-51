@@ -265,6 +265,7 @@ const OrderConfirmation = () => {
                             text={item.engraving_text || ""}
                             font={item.engraving_font || 'arial'}
                             symbols={item.engraving_symbols ? JSON.parse(item.engraving_symbols) : []}
+                            symbolPosition="after"
                             compact={true}
                             showTitle={false}
                           />
