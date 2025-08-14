@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { type EngravingSymbol, type EngravingCategory } from "@/types/engraving";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 interface SymbolSelectorProps {
   selectedSymbols: string[];
@@ -14,6 +16,7 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
   const [symbols, setSymbols] = useState<EngravingSymbol[]>([]);
   const [categories, setCategories] = useState<EngravingCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadData();
@@ -59,6 +62,13 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
     return symbols.filter(symbol => selectedSymbols.includes(symbol.id));
   };
 
+  const getSymbolsByCategory = (categoryId: string) => {
+    return symbols.filter(symbol => 
+      symbol.category_id === categoryId && 
+      (searchTerm === "" || symbol.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -68,8 +78,37 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
     );
   }
 
+  const renderSymbolGrid = (categorySymbols: EngravingSymbol[]) => (
+    <div className="grid grid-cols-5 gap-3">
+      {categorySymbols.map(symbol => (
+        <button
+          key={symbol.id}
+          type="button"
+          onClick={() => handleSymbolToggle(symbol.id)}
+          className={`relative p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+            selectedSymbols.includes(symbol.id)
+              ? 'border-primary bg-primary/10'
+              : 'border-border hover:border-primary/50'
+          }`}
+          title={symbol.name}
+        >
+          <img
+            src={symbol.image_url || ''}
+            alt={symbol.name}
+            className="w-10 h-10 object-contain mx-auto"
+          />
+          {selectedSymbols.includes(symbol.id) && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-xs text-primary-foreground font-bold">✓</span>
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">
           Símbolos: ({selectedSymbols.length} selecionados)
@@ -106,48 +145,45 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
         </div>
       )}
 
-      {/* Grid de símbolos disponíveis */}
-      <div className="max-h-60 overflow-y-auto border border-border rounded-lg p-3">
-        {categories.map(category => {
-          const categorySymbols = symbols.filter(symbol => symbol.category_id === category.id);
-          
-          if (categorySymbols.length === 0) return null;
+      {/* Barra de busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Buscar símbolos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
 
+      {/* Abas por categorias */}
+      <Tabs defaultValue={categories[0]?.id || ""} className="w-full">
+        <TabsList className="grid grid-cols-3 w-full">
+          {categories.map(category => (
+            <TabsTrigger key={category.id} value={category.id} className="text-xs">
+              {category.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {categories.map(category => {
+          const categorySymbols = getSymbolsByCategory(category.id);
+          
           return (
-            <div key={category.id} className="space-y-2 mb-4 last:mb-0">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {category.name}
-              </Label>
-              <div className="grid grid-cols-6 gap-2">
-                {categorySymbols.map(symbol => (
-                  <button
-                    key={symbol.id}
-                    type="button"
-                    onClick={() => handleSymbolToggle(symbol.id)}
-                    className={`relative p-2 rounded-lg border-2 transition-all hover:scale-105 ${
-                      selectedSymbols.includes(symbol.id)
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    title={symbol.name}
-                  >
-                    <img
-                      src={symbol.image_url || ''}
-                      alt={symbol.name}
-                      className="w-8 h-8 object-contain mx-auto"
-                    />
-                    {selectedSymbols.includes(symbol.id) && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                        <span className="text-xs text-primary-foreground font-bold">✓</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
+            <TabsContent key={category.id} value={category.id} className="mt-4">
+              <div className="max-h-80 overflow-y-auto">
+                {categorySymbols.length > 0 ? (
+                  renderSymbolGrid(categorySymbols)
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {searchTerm ? 'Nenhum símbolo encontrado' : 'Nenhum símbolo disponível'}
+                  </div>
+                )}
               </div>
-            </div>
+            </TabsContent>
           );
         })}
-      </div>
+      </Tabs>
     </div>
   );
 }
