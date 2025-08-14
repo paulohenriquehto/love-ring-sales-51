@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Activity, CheckCircle, AlertCircle, Clock, Pause, Play, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import type { CSVData, ImportConfig } from '@/pages/ImportProducts';
 
 interface ImportProgressProps {
@@ -39,6 +40,7 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ csvData, config, onImpo
   const [isPaused, setIsPaused] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const addLog = (type: LogEntry['type'], message: string, product?: string) => {
     setLogs(prev => [...prev, {
@@ -58,6 +60,7 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ csvData, config, onImpo
       const { data: importLog, error: logError } = await supabase
         .from('import_logs')
         .insert({
+          user_id: profile?.user_id || '',
           filename: csvData.fileName,
           total_products: csvData.totalRows,
           status: 'processing' as const,
