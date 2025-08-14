@@ -11,102 +11,186 @@ type RequestWithProfile = {
 
 export const useDashboardData = () => {
   // Requisições pendentes
-  const { data: pendingRequests = 0 } = useQuery({
+  const { data: pendingRequests = 0, error: pendingError } = useQuery({
     queryKey: ['dashboard-pending-requests'],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending_approval');
-      return count || 0;
-    }
+      try {
+        const { count, error } = await supabase
+          .from('requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending_approval');
+        
+        if (error) {
+          console.error('Error fetching pending requests:', error);
+          return 0;
+        }
+        
+        return count || 0;
+      } catch (error) {
+        console.error('Error in pending requests query:', error);
+        return 0;
+      }
+    },
+    retry: 1,
+    staleTime: 30000, // 30 seconds
   });
 
   // Departamentos ativos
-  const { data: activeDepartments = 0 } = useQuery({
+  const { data: activeDepartments = 0, error: departmentsError } = useQuery({
     queryKey: ['dashboard-active-departments'],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('departments')
-        .select('*', { count: 'exact', head: true })
-        .eq('active', true);
-      return count || 0;
-    }
+      try {
+        const { count, error } = await supabase
+          .from('departments')
+          .select('*', { count: 'exact', head: true })
+          .eq('active', true);
+        
+        if (error) {
+          console.error('Error fetching departments:', error);
+          return 0;
+        }
+        
+        return count || 0;
+      } catch (error) {
+        console.error('Error in departments query:', error);
+        return 0;
+      }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Usuários ativos
-  const { data: activeUsers = 0 } = useQuery({
+  const { data: activeUsers = 0, error: usersError } = useQuery({
     queryKey: ['dashboard-active-users'],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('active', true);
-      return count || 0;
-    }
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('active', true);
+        
+        if (error) {
+          console.error('Error fetching users:', error);
+          return 0;
+        }
+        
+        return count || 0;
+      } catch (error) {
+        console.error('Error in users query:', error);
+        return 0;
+      }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Gastos do mês atual
-  const { data: monthlyExpenses = 0 } = useQuery({
+  const { data: monthlyExpenses = 0, error: expensesError } = useQuery({
     queryKey: ['dashboard-monthly-expenses'],
     queryFn: async () => {
-      const currentDate = new Date();
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      try {
+        const currentDate = new Date();
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
-      const { data } = await supabase
-        .from('requests')
-        .select('total_amount')
-        .gte('created_at', startOfMonth.toISOString())
-        .lte('created_at', endOfMonth.toISOString())
-        .in('status', ['approved', 'completed']);
+        const { data, error } = await supabase
+          .from('requests')
+          .select('total_amount')
+          .gte('created_at', startOfMonth.toISOString())
+          .lte('created_at', endOfMonth.toISOString())
+          .in('status', ['approved', 'completed']);
 
-      const total = data?.reduce((sum, request) => sum + (request.total_amount || 0), 0) || 0;
-      return total;
-    }
+        if (error) {
+          console.error('Error fetching expenses:', error);
+          return 0;
+        }
+
+        const total = data?.reduce((sum, request) => sum + (request.total_amount || 0), 0) || 0;
+        return total;
+      } catch (error) {
+        console.error('Error in expenses query:', error);
+        return 0;
+      }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Requisições recentes
-  const { data: recentRequests = [] } = useQuery<RequestWithProfile[]>({
+  const { data: recentRequests = [], error: recentError } = useQuery<RequestWithProfile[]>({
     queryKey: ['dashboard-recent-requests'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('requests')
-        .select(`
-          id,
-          title,
-          status,
-          requester_user_id,
-          departments(name)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(3);
+      try {
+        const { data, error } = await supabase
+          .from('requests')
+          .select(`
+            id,
+            title,
+            status,
+            requester_user_id,
+            departments(name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(3);
 
-      // Buscar dados dos usuários separadamente
-      if (data) {
+        if (error) {
+          console.error('Error fetching recent requests:', error);
+          return [];
+        }
+
+        if (!data) return [];
+
+        // Buscar dados dos usuários separadamente
         const requestsWithUsers = await Promise.all(
           data.map(async (request) => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('user_id', request.requester_user_id)
-              .maybeSingle();
-            
-            return {
-              id: request.id,
-              title: request.title,
-              status: request.status,
-              departments: request.departments,
-              requester_profile: profile
-            };
+            try {
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', request.requester_user_id)
+                .maybeSingle();
+              
+              if (profileError) {
+                console.error('Error fetching profile:', profileError);
+              }
+              
+              return {
+                id: request.id,
+                title: request.title,
+                status: request.status,
+                departments: request.departments,
+                requester_profile: profile
+              };
+            } catch (error) {
+              console.error('Error processing request:', error);
+              return {
+                id: request.id,
+                title: request.title,
+                status: request.status,
+                departments: request.departments,
+                requester_profile: null
+              };
+            }
           })
         );
+        
         return requestsWithUsers as RequestWithProfile[];
+      } catch (error) {
+        console.error('Error in recent requests query:', error);
+        return [];
       }
-
-      return [];
-    }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
+
+  // Log errors for debugging
+  if (pendingError) console.error('Pending requests error:', pendingError);
+  if (departmentsError) console.error('Departments error:', departmentsError);
+  if (usersError) console.error('Users error:', usersError);
+  if (expensesError) console.error('Expenses error:', expensesError);
+  if (recentError) console.error('Recent requests error:', recentError);
 
   return {
     pendingRequests,

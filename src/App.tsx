@@ -8,7 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./components/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import DashboardFallback from "./pages/DashboardFallback";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -22,7 +22,16 @@ import DepartmentManager from "./components/DepartmentManager";
 import ImportProducts from "./pages/ImportProducts";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (previously cacheTime)
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -48,10 +57,10 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Dashboard />
+                    <DashboardFallback />
                   </AppLayout>
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/departments" 
