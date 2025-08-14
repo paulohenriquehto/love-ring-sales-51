@@ -26,6 +26,19 @@ const ImportTemplates: React.FC<ImportTemplatesProps> = ({ onClose }) => {
 
   const templates: Template[] = [
     {
+      id: 'woocommerce',
+      name: 'WooCommerce (Compatibilidade Total)',
+      description: 'Template específico para importação direta de exports do WooCommerce com todos os campos suportados',
+      icon: Package,
+      category: 'WooCommerce',
+      fileName: 'template-woocommerce.csv',
+      headers: ['Name', 'SKU', 'Description', 'Short description', 'Regular price', 'Sale price', 'Categories', 'Tags', 'Stock', 'Stock status', 'Weight', 'Images', 'Featured image', 'Type', 'Status', 'Tax status', 'Tax class', 'Shipping class', 'Featured?', 'Visibility', 'Attributes'],
+      sampleData: [
+        ['Produto WooCommerce 1', 'WOO001', 'Descrição completa do produto', 'Descrição curta', '99.90', '79.90', 'Categoria A', 'tag1,tag2', '50', 'instock', '0.5', 'https://example.com/img1.jpg,https://example.com/img2.jpg', 'https://example.com/featured.jpg', 'simple', 'publish', 'taxable', '', '', '1', 'visible', 'Size: M | Color: Blue'],
+        ['Produto Variável WooCommerce', 'WOO002-VAR', 'Produto com variações', 'Produto variável', '149.90', '', 'Categoria B', 'variavel', '0', 'instock', '0.8', 'https://example.com/var1.jpg', 'https://example.com/var-main.jpg', 'variable', 'publish', 'taxable', '', '', '0', 'visible', 'Size: P,M,G | Color: Red,Blue,Green'],
+      ]
+    },
+    {
       id: 'jewelry',
       name: 'Joias e Bijuterias',
       description: 'Template completo para produtos de joalheria com variantes de material e tamanho',
@@ -122,6 +135,7 @@ const ImportTemplates: React.FC<ImportTemplatesProps> = ({ onClose }) => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
+      case 'WooCommerce': return 'bg-orange-500';
       case 'Popular': return 'bg-blue-500';
       case 'Moda': return 'bg-purple-500';
       case 'Tecnologia': return 'bg-green-500';

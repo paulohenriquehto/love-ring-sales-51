@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertCircle, ArrowRight, CheckCircle, Settings, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import WooCommerceDetector from './WooCommerceDetector';
 import type { CSVData, ColumnMapping, ImportConfig } from '@/pages/ImportProducts';
 
 interface ColumnMapperProps {
@@ -17,41 +18,74 @@ interface ColumnMapperProps {
   onMappingComplete: (config: ImportConfig) => void;
 }
 
-// Available mapping options
+// Available mapping options - Expanded for WooCommerce compatibility
 const MAPPING_OPTIONS = {
   // Product fields
   name: 'Nome do Produto',
   sku: 'SKU',
   description: 'Descrição',
+  short_description: 'Descrição Curta',
   base_price: 'Preço Base',
   weight: 'Peso (kg)',
   
   // Category and classification
   category: 'Categoria',
+  tags: 'Tags',
   
   // Stock
   stock_quantity: 'Quantidade em Estoque',
+  manage_stock: 'Gerenciar Estoque',
+  stock_status: 'Status do Estoque',
   
   // Images
   images: 'URLs das Imagens',
+  featured_image: 'Imagem Principal',
   
-  // Variants
+  // Variants and attributes
   size: 'Tamanho',
   color: 'Cor',
   material: 'Material',
   width: 'Largura',
+  attributes: 'Atributos',
   
-  // WooCommerce specific
+  // WooCommerce specific fields
   type: 'Tipo de Produto',
   status: 'Status',
   regular_price: 'Preço Regular',
   sale_price: 'Preço Promocional',
+  sale_price_start: 'Início Promoção',
+  sale_price_end: 'Fim Promoção',
+  
+  // Tax and shipping
+  tax_status: 'Status Fiscal',
+  tax_class: 'Classe Fiscal',
+  shipping_class: 'Classe de Envio',
+  
+  // Advanced WooCommerce
+  parent_sku: 'SKU do Produto Pai',
+  grouped_products: 'Produtos Agrupados',
+  upsells: 'Vendas Cruzadas',
+  cross_sells: 'Produtos Relacionados',
+  
+  // Visibility and featured
+  visibility: 'Visibilidade',
+  featured: 'Produto em Destaque',
+  
+  // External product fields
+  external_url: 'URL Externa',
+  button_text: 'Texto do Botão',
+  
+  // Meta fields
+  meta_title: 'Título SEO',
+  meta_description: 'Descrição SEO',
   
   // Ignore
   ignore: 'Ignorar',
 };
 
-const REQUIRED_FIELDS = ['name', 'base_price'];
+// Intelligent required fields - accepts base_price OR regular_price for WooCommerce compatibility
+const REQUIRED_FIELDS = ['name'];
+const PRICE_FIELDS = ['base_price', 'regular_price'];
 
 const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete }) => {
   const [mapping, setMapping] = useState<ColumnMapping>({});
@@ -61,40 +95,110 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
-  // Auto-map columns based on similarity
+  // Enhanced auto-mapping with WooCommerce intelligence
   useEffect(() => {
     const autoMapping: ColumnMapping = {};
     
     csvData.headers.forEach(header => {
       const lowerHeader = header.toLowerCase().trim();
       
-      // Common mappings
-      if (lowerHeader.includes('name') && lowerHeader.includes('product')) {
+      // WooCommerce exact field mappings
+      if (lowerHeader === 'name' || lowerHeader === 'product name') {
         autoMapping[header] = 'name';
-      } else if (lowerHeader === 'sku' || lowerHeader === 'código') {
+      } else if (lowerHeader === 'sku') {
         autoMapping[header] = 'sku';
-      } else if (lowerHeader.includes('description') || lowerHeader.includes('descrição')) {
+      } else if (lowerHeader === 'description') {
         autoMapping[header] = 'description';
-      } else if (lowerHeader.includes('price') && (lowerHeader.includes('regular') || lowerHeader.includes('base'))) {
-        autoMapping[header] = 'base_price';
-      } else if (lowerHeader.includes('price') && !lowerHeader.includes('sale')) {
-        autoMapping[header] = 'base_price';
-      } else if (lowerHeader.includes('weight') || lowerHeader.includes('peso')) {
-        autoMapping[header] = 'weight';
-      } else if (lowerHeader.includes('categor')) {
-        autoMapping[header] = 'category';
-      } else if (lowerHeader.includes('stock') || lowerHeader.includes('estoque')) {
+      } else if (lowerHeader === 'short description') {
+        autoMapping[header] = 'short_description';
+      } else if (lowerHeader === 'regular price') {
+        autoMapping[header] = 'regular_price';
+      } else if (lowerHeader === 'sale price') {
+        autoMapping[header] = 'sale_price';
+      } else if (lowerHeader === 'stock' || lowerHeader === 'stock quantity') {
         autoMapping[header] = 'stock_quantity';
-      } else if (lowerHeader.includes('image') || lowerHeader.includes('foto')) {
+      } else if (lowerHeader === 'in stock?' || lowerHeader === 'stock status') {
+        autoMapping[header] = 'stock_status';
+      } else if (lowerHeader === 'images' || lowerHeader === 'image gallery') {
         autoMapping[header] = 'images';
-      } else if (lowerHeader.includes('size') || lowerHeader.includes('tamanho')) {
-        autoMapping[header] = 'size';
-      } else if (lowerHeader.includes('color') || lowerHeader.includes('cor')) {
-        autoMapping[header] = 'color';
-      } else if (lowerHeader.includes('material')) {
-        autoMapping[header] = 'material';
-      } else if (lowerHeader.includes('width') || lowerHeader.includes('largura')) {
-        autoMapping[header] = 'width';
+      } else if (lowerHeader === 'featured image') {
+        autoMapping[header] = 'featured_image';
+      } else if (lowerHeader === 'categories') {
+        autoMapping[header] = 'category';
+      } else if (lowerHeader === 'tags') {
+        autoMapping[header] = 'tags';
+      } else if (lowerHeader === 'weight') {
+        autoMapping[header] = 'weight';
+      } else if (lowerHeader === 'type' || lowerHeader === 'product type') {
+        autoMapping[header] = 'type';
+      } else if (lowerHeader === 'status' || lowerHeader === 'published') {
+        autoMapping[header] = 'status';
+      } else if (lowerHeader === 'tax status') {
+        autoMapping[header] = 'tax_status';
+      } else if (lowerHeader === 'tax class') {
+        autoMapping[header] = 'tax_class';
+      } else if (lowerHeader === 'shipping class') {
+        autoMapping[header] = 'shipping_class';
+      } else if (lowerHeader === 'featured' || lowerHeader === 'featured?') {
+        autoMapping[header] = 'featured';
+      } else if (lowerHeader === 'visibility') {
+        autoMapping[header] = 'visibility';
+      } else if (lowerHeader === 'parent sku' || lowerHeader === 'parent') {
+        autoMapping[header] = 'parent_sku';
+      } else if (lowerHeader === 'attributes') {
+        autoMapping[header] = 'attributes';
+      } else if (lowerHeader === 'manage stock?' || lowerHeader === 'manage stock') {
+        autoMapping[header] = 'manage_stock';
+      } else if (lowerHeader === 'date sale price starts from' || lowerHeader === 'sale start date') {
+        autoMapping[header] = 'sale_price_start';
+      } else if (lowerHeader === 'date sale price ends' || lowerHeader === 'sale end date') {
+        autoMapping[header] = 'sale_price_end';
+      } else if (lowerHeader === 'external url') {
+        autoMapping[header] = 'external_url';
+      } else if (lowerHeader === 'button text') {
+        autoMapping[header] = 'button_text';
+      } else if (lowerHeader === 'upsells') {
+        autoMapping[header] = 'upsells';
+      } else if (lowerHeader === 'cross-sells') {
+        autoMapping[header] = 'cross_sells';
+      } else if (lowerHeader === 'grouped products') {
+        autoMapping[header] = 'grouped_products';
+      } else if (lowerHeader === 'meta: _yoast_wpseo_title' || lowerHeader === 'seo title') {
+        autoMapping[header] = 'meta_title';
+      } else if (lowerHeader === 'meta: _yoast_wpseo_metadesc' || lowerHeader === 'seo description') {
+        autoMapping[header] = 'meta_description';
+      }
+      
+      // Attribute mappings (for variants)
+      else if (lowerHeader.includes('attribute') || lowerHeader.includes('pa_')) {
+        if (lowerHeader.includes('size') || lowerHeader.includes('tamanho')) {
+          autoMapping[header] = 'size';
+        } else if (lowerHeader.includes('color') || lowerHeader.includes('cor')) {
+          autoMapping[header] = 'color';
+        } else if (lowerHeader.includes('material')) {
+          autoMapping[header] = 'material';
+        } else {
+          autoMapping[header] = 'attributes';
+        }
+      }
+      
+      // Fallback patterns for common variations
+      else if (lowerHeader.includes('nome') && lowerHeader.includes('produto')) {
+        autoMapping[header] = 'name';
+      } else if (lowerHeader.includes('preço') && lowerHeader.includes('regular')) {
+        autoMapping[header] = 'regular_price';
+      } else if (lowerHeader.includes('preço') && lowerHeader.includes('promocional')) {
+        autoMapping[header] = 'sale_price';
+      } else if (lowerHeader.includes('estoque')) {
+        autoMapping[header] = 'stock_quantity';
+      } else if (lowerHeader.includes('categoria')) {
+        autoMapping[header] = 'category';
+      } else if (lowerHeader.includes('descrição')) {
+        autoMapping[header] = 'description';
+      } else if (lowerHeader.includes('peso')) {
+        autoMapping[header] = 'weight';
+      } else if (lowerHeader.includes('imagem') || lowerHeader.includes('foto')) {
+        autoMapping[header] = 'images';
       }
     });
 
@@ -112,10 +216,22 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
     const mappedFields = Object.values(mapping).filter(Boolean);
     const missingRequired = REQUIRED_FIELDS.filter(field => !mappedFields.includes(field));
     
+    // Check if at least one price field is mapped (WooCommerce compatibility)
+    const hasPriceField = PRICE_FIELDS.some(field => mappedFields.includes(field));
+    
     if (missingRequired.length > 0) {
       toast({
         title: "Campos obrigatórios não mapeados",
         description: `Os seguintes campos são obrigatórios: ${missingRequired.map(f => MAPPING_OPTIONS[f as keyof typeof MAPPING_OPTIONS]).join(', ')}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!hasPriceField) {
+      toast({
+        title: "Campo de preço obrigatório",
+        description: "É necessário mapear pelo menos um campo de preço: 'Preço Base' ou 'Preço Regular'",
         variant: "destructive",
       });
       return false;
@@ -139,14 +255,21 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
 
   const getMappingStatus = () => {
     const mapped = Object.values(mapping).filter(v => v && v !== 'ignore').length;
-    const required = REQUIRED_FIELDS.filter(field => Object.values(mapping).includes(field)).length;
-    return { mapped, required, total: csvData.headers.length };
+    const mappedFields = Object.values(mapping).filter(Boolean);
+    const required = REQUIRED_FIELDS.filter(field => mappedFields.includes(field)).length;
+    const hasPriceField = PRICE_FIELDS.some(field => mappedFields.includes(field));
+    const totalRequired = REQUIRED_FIELDS.length + (hasPriceField ? 0 : 1);
+    const actualRequired = required + (hasPriceField ? 1 : 0);
+    
+    return { mapped, required: actualRequired, total: csvData.headers.length, totalRequired };
   };
 
   const status = getMappingStatus();
 
   return (
     <div className="space-y-6">
+      <WooCommerceDetector csvData={csvData} />
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -160,8 +283,8 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
         <CardContent>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <Badge variant={status.required === REQUIRED_FIELDS.length ? "default" : "destructive"}>
-                {status.required}/{REQUIRED_FIELDS.length} campos obrigatórios
+              <Badge variant={status.required === status.totalRequired ? "default" : "destructive"}>
+                {status.required}/{status.totalRequired} campos obrigatórios
               </Badge>
               <Badge variant="outline">
                 {status.mapped}/{status.total} colunas mapeadas
@@ -288,6 +411,14 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
                           {MAPPING_OPTIONS[field as keyof typeof MAPPING_OPTIONS]}
                         </li>
                       ))}
+                      <li className="flex items-center gap-2">
+                        {PRICE_FIELDS.some(field => Object.values(mapping).includes(field)) ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                        )}
+                        Preço (Base ou Regular)
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -350,7 +481,7 @@ const ColumnMapper: React.FC<ColumnMapperProps> = ({ csvData, onMappingComplete 
         </Button>
         <Button 
           onClick={handleContinue}
-          disabled={status.required < REQUIRED_FIELDS.length}
+          disabled={status.required < status.totalRequired}
         >
           Continuar para Importação
         </Button>

@@ -245,6 +245,31 @@ async function processProduct(
     }
   });
 
+  // Handle WooCommerce price mapping intelligently
+  if (productData.regular_price && !productData.base_price) {
+    productData.base_price = productData.regular_price;
+  }
+
+  // Handle WooCommerce stock status conversion
+  if (productData.stock_status) {
+    const stockStatus = productData.stock_status.toLowerCase();
+    if (stockStatus === 'instock' || stockStatus === 'true' || stockStatus === '1') {
+      if (!productData.stock_quantity || productData.stock_quantity === '') {
+        productData.stock_quantity = '10'; // Default stock for "in stock" items
+      }
+    } else if (stockStatus === 'outofstock' || stockStatus === 'false' || stockStatus === '0') {
+      productData.stock_quantity = '0';
+    }
+  }
+
+  // Handle WooCommerce status field
+  if (productData.status) {
+    const status = productData.status.toLowerCase();
+    productData.active = status === 'publish' || status === 'published' || status === 'true';
+  } else {
+    productData.active = true; // Default to active
+  }
+
   // Validate required fields with detailed messages
   if (!productData.name || productData.name === '') {
     throw new Error('Nome do produto é obrigatório e não pode estar vazio');
@@ -259,10 +284,13 @@ async function processProduct(
     throw new Error('Nome do produto deve ter no máximo 255 caracteres');
   }
 
-  // Parse and validate numeric fields
+  // Parse and validate numeric fields with WooCommerce support
   if (productData.base_price) {
-    // Clean price string and convert to number
-    const cleanPrice = productData.base_price.replace(/[^0-9.,]/g, '').replace(',', '.');
+    // Enhanced price cleaning for WooCommerce formats
+    const cleanPrice = productData.base_price
+      .toString()
+      .replace(/[^\d.,]/g, '') // Remove currency symbols and text
+      .replace(',', '.'); // Convert comma to dot for decimal
     const price = parseFloat(cleanPrice);
     
     if (isNaN(price) || price < 0) {
@@ -274,6 +302,39 @@ async function processProduct(
     }
     
     productData.base_price = price;
+  }
+
+  // Handle sale price if present
+  if (productData.sale_price && productData.sale_price !== '') {
+    const cleanSalePrice = productData.sale_price
+      .toString()
+      .replace(/[^\d.,]/g, '')
+      .replace(',', '.');
+    const salePrice = parseFloat(cleanSalePrice);
+    
+    if (!isNaN(salePrice) && salePrice >= 0) {
+      // Calculate discount percentage
+      const discount = ((productData.base_price - salePrice) / productData.base_price) * 100;
+      if (discount > 0 && discount <= 100) {
+        // Store promotional price in a custom field or adjust base price
+        productData.sale_price_value = salePrice;
+        productData.discount_percentage = Math.round(discount);
+      }
+    }
+  }
+
+  // Parse stock quantity with WooCommerce formats
+  if (productData.stock_quantity && productData.stock_quantity !== '') {
+    const cleanStock = productData.stock_quantity.toString().replace(/[^\d]/g, '');
+    const stock = parseInt(cleanStock, 10);
+    
+    if (!isNaN(stock) && stock >= 0) {
+      productData.stock_quantity = stock;
+    } else {
+      productData.stock_quantity = 0;
+    }
+  } else {
+    productData.stock_quantity = 0;
   }
 
   if (productData.weight) {
@@ -333,15 +394,15 @@ async function processProduct(
     // Update mode will be handled below
   }
 
-  // Prepare product insert/update data
+  // Prepare product insert/update data with enhanced WooCommerce support
   const productInsertData = {
     name: productData.name,
-    description: productData.description || null,
+    description: productData.description || productData.short_description || null,
     sku: productData.sku || null,
     base_price: productData.base_price,
     weight: productData.weight || null,
     category_id: categoryId,
-    active: true,
+    active: productData.active !== undefined ? productData.active : true,
   };
 
   let productId;
