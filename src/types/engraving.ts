@@ -4,6 +4,9 @@ export interface EngravingSymbol {
   category_id: string;
   unicode_char: string;
   price_adjustment: number;
+  image_url?: string;
+  svg_content?: string;
+  active?: boolean;
 }
 
 export interface EngravingCategory {
@@ -11,6 +14,9 @@ export interface EngravingCategory {
   name: string;
   icon: string;
   sort_order: number;
+  description?: string;
+  image_url?: string;
+  active?: boolean;
 }
 
 export interface SelectedSymbol {

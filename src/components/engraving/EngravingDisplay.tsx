@@ -55,9 +55,19 @@ export function EngravingDisplay({
     return (
       <div className={`flex gap-1 ${position === 'above' || position === 'below' ? 'justify-center' : ''}`}>
         {positionSymbols.map((symbol, index) => (
-          <span key={`${symbol?.id}-${index}`} className={compact ? "text-sm" : "text-lg"}>
-            {symbol?.unicode_char}
-          </span>
+          <div key={`${symbol?.id}-${index}`} className={`flex items-center justify-center ${compact ? "w-4 h-4" : "w-6 h-6"}`}>
+            {(symbol as any)?.image_url ? (
+              <img 
+                src={(symbol as any).image_url} 
+                alt={symbol?.name}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <span className={compact ? "text-sm" : "text-lg"}>
+                {symbol?.unicode_char}
+              </span>
+            )}
+          </div>
         ))}
       </div>
     );

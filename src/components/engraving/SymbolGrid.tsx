@@ -59,7 +59,17 @@ export function SymbolGrid({ symbols, selectedSymbols, onSymbolSelect, onSymbolR
               }`}
               onClick={() => handleSymbolClick(symbol)}
             >
-              <div className="text-xl text-center">{symbol.unicode_char}</div>
+              <div className="w-6 h-6 flex items-center justify-center mx-auto">
+                {(symbol as any).image_url ? (
+                  <img 
+                    src={(symbol as any).image_url} 
+                    alt={symbol.name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-xl text-center">{symbol.unicode_char}</div>
+                )}
+              </div>
               <div className="text-[10px] text-center text-muted-foreground mt-0.5 truncate">
                 {symbol.name}
               </div>
