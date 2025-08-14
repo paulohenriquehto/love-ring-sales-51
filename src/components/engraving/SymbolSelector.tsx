@@ -64,7 +64,7 @@ export function SymbolSelector({ selectedSymbols, onSymbolSelect, onSymbolRemove
           Elementos Decorativos:
         </h3>
         <p className="text-xs text-muted-foreground">
-          Adicione símbolos, signos ou elementos de times à sua gravação
+          Adicione símbolos ou elementos de times à sua gravação
         </p>
       </div>
 
