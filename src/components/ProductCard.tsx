@@ -235,6 +235,11 @@ export function ProductCard({ product, onAddToCart, engravingConfig }: ProductCa
           onClick={() => {
             if (selectedSize) {
               onAddToCart(product, selectedSize, selectedWidth, pendingEngraving);
+              // Reset personalização após adicionar ao carrinho
+              setPendingEngraving(undefined);
+              // Reset seleções para os primeiros valores disponíveis
+              setSelectedSize(product.sizes[0] || "");
+              setSelectedWidth(product.widths?.[0] || "");
             }
           }}
         >
