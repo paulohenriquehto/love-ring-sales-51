@@ -20,6 +20,7 @@ import Departments from "./pages/Departments.tsx";
 import Products from "./pages/Products.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import OrderConfirmation from "./pages/OrderConfirmation.tsx";
+import ImportProducts from "./pages/ImportProducts.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -39,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/inventory" element={<AppLayout><Inventory /></AppLayout>} />
             <Route path="/departments" element={<AppLayout><Departments /></AppLayout>} />
             <Route path="/products" element={<AppLayout><Products /></AppLayout>} />
+            <Route path="/import-products" element={<AppLayout><ImportProducts /></AppLayout>} />
             <Route path="/checkout" element={<AppLayout><Checkout /></AppLayout>} />
             <Route path="/order-confirmation/:orderId" element={<AppLayout><OrderConfirmation /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
