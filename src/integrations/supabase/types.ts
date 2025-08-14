@@ -1264,6 +1264,53 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_deliveries: {
+        Row: {
+          created_at: string
+          delivered_at: string
+          error_message: string | null
+          event: string
+          id: string
+          payload: Json | null
+          response_time_ms: number | null
+          status_code: number
+          success: boolean
+          webhook_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string
+          error_message?: string | null
+          event: string
+          id?: string
+          payload?: Json | null
+          response_time_ms?: number | null
+          status_code: number
+          success?: boolean
+          webhook_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string
+          error_message?: string | null
+          event?: string
+          id?: string
+          payload?: Json | null
+          response_time_ms?: number | null
+          status_code?: number
+          success?: boolean
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhooks: {
         Row: {
           active: boolean
