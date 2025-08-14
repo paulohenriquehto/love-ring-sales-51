@@ -230,7 +230,7 @@ export default function Requests() {
           justification: newRequest.justification,
           total_amount: totalAmount,
           requester_user_id: profile?.user_id,
-          status: 'draft'
+          status: 'pending_approval'
         })
         .select()
         .single();
@@ -433,11 +433,23 @@ export default function Requests() {
   };
 
   const canEditRequest = (request: Request) => {
-    return request.status === 'draft' || request.status === 'rejected';
+    // Permite edição para rascunhos, rejeitadas e aguardando aprovação
+    return ['draft', 'rejected', 'pending_approval'].includes(request.status);
   };
 
   const canDeleteRequest = (request: Request) => {
-    return request.status === 'draft';
+    // Permite exclusão apenas para rascunhos e aguardando aprovação
+    return ['draft', 'pending_approval'].includes(request.status);
+  };
+
+  const getActionTooltip = (request: Request, action: 'edit' | 'delete') => {
+    if (action === 'edit') {
+      if (canEditRequest(request)) return 'Editar requisição';
+      return 'Não é possível editar requisições aprovadas, concluídas ou canceladas';
+    } else {
+      if (canDeleteRequest(request)) return 'Excluir requisição';
+      return 'Não é possível excluir requisições aprovadas, concluídas ou canceladas';
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -686,7 +698,7 @@ export default function Requests() {
                     Cancelar
                   </Button>
                   <Button onClick={editingRequest ? updateRequest : createRequest}>
-                    {editingRequest ? 'Atualizar Requisição' : 'Criar Requisição'}
+                    {editingRequest ? 'Atualizar Requisição' : 'Criar e Enviar Requisição'}
                   </Button>
                 </div>
               </div>
@@ -719,33 +731,38 @@ export default function Requests() {
                       {getStatusBadge(request.status).label}
                     </Badge>
                     
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => openEditDialog(request)}
-                          disabled={!canEditRequest(request)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setDeletingRequest(request);
-                            setShowDeleteDialog(true);
-                          }}
-                          disabled={!canDeleteRequest(request)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Só mostra o menu se houver alguma ação disponível */}
+                    {(canEditRequest(request) || canDeleteRequest(request)) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {canEditRequest(request) && (
+                            <DropdownMenuItem
+                              onClick={() => openEditDialog(request)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          {canDeleteRequest(request) && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setDeletingRequest(request);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
               </CardHeader>
