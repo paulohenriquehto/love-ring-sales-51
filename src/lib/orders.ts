@@ -128,7 +128,7 @@ export async function searchOrders(params: SearchOrdersParams): Promise<OrdersRe
 
   // Apply search filters
   if (search) {
-    query = query.or(`customer_cpf.ilike.%${search}%,customer_name.ilike.%${search}%,order_number.ilike.%${search}%`);
+    query = query.or(`customer_cpf.ilike.%${search}%,customer_name.ilike.%${search}%,orders.order_number.ilike.%${search}%`);
   }
 
   if (status) {
