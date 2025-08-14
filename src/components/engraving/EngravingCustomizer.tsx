@@ -58,8 +58,8 @@ export function EngravingCustomizer({
   const isValid = (text.length > 0 || selectedSymbols.length > 0) && remainingChars >= 0;
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="text-center border-b border-border pb-4">
+    <div className="max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="text-center border-b border-border pb-3 px-4 pt-4">
         <h3 className="text-lg font-semibold text-foreground">
           Personalização da Gravação
         </h3>
@@ -68,86 +68,86 @@ export function EngravingCustomizer({
         </p>
       </div>
 
-      {/* Text Input */}
-      <div className="space-y-2">
-        <Label htmlFor="engraving-text" className="text-sm font-medium">
-          Texto da gravação:
-        </Label>
-        <div className="space-y-1">
-          <Input
-            id="engraving-text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Digite seu texto aqui..."
-            maxLength={config.max_characters}
-            className="w-full"
-          />
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-muted-foreground">
-              Máximo {config.max_characters} caracteres (símbolos contam como 2 cada)
-            </span>
-            <span className={`font-medium ${
-              remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
-            }`}>
-              {getTotalCharacters()}/{config.max_characters}
-            </span>
+      <div className="flex-1 overflow-y-auto px-4 space-y-3">
+        {/* Text Input */}
+        <div className="space-y-2">
+          <Label htmlFor="engraving-text" className="text-sm font-medium">
+            Texto da gravação:
+          </Label>
+          <div className="space-y-1">
+            <Input
+              id="engraving-text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Digite seu texto aqui..."
+              maxLength={config.max_characters}
+              className="w-full"
+            />
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">
+                Máx. {config.max_characters} chars (símbolos = 2)
+              </span>
+              <span className={`font-medium ${
+                remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
+              }`}>
+                {getTotalCharacters()}/{config.max_characters}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Font Selection */}
+        <FontSelector
+          value={font}
+          onChange={setFont}
+          availableFonts={config.available_fonts}
+        />
+
+        {/* Symbol Selection */}
+        <SymbolSelector
+          selectedSymbols={selectedSymbols}
+          onSymbolSelect={handleSymbolSelect}
+          onSymbolRemove={handleSymbolRemove}
+        />
+
+        {/* Preview */}
+        <EngravingPreview 
+          text={text} 
+          font={font} 
+          selectedSymbols={selectedSymbols}
+          onSymbolRemove={handleSymbolRemove}
+        />
+
+        {/* Price Info */}
+        {config.price_adjustment > 0 && (
+          <div className="bg-muted/50 rounded-lg p-2 text-center">
+            <p className="text-sm text-muted-foreground">
+              Gravação: <span className="font-semibold text-foreground">
+                +R$ {config.price_adjustment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Font Selection */}
-      <FontSelector
-        value={font}
-        onChange={setFont}
-        availableFonts={config.available_fonts}
-      />
-
-      <Separator />
-
-      {/* Symbol Selection */}
-      <SymbolSelector
-        selectedSymbols={selectedSymbols}
-        onSymbolSelect={handleSymbolSelect}
-        onSymbolRemove={handleSymbolRemove}
-      />
-
-      <Separator />
-
-      {/* Preview */}
-      <EngravingPreview 
-        text={text} 
-        font={font} 
-        selectedSymbols={selectedSymbols}
-      />
-
-      {/* Price Info */}
-      {config.price_adjustment > 0 && (
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <p className="text-sm text-muted-foreground">
-            Gravação personalizada:{" "}
-            <span className="font-semibold text-foreground">
-              +R$ {config.price_adjustment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
-          </p>
+      {/* Action Buttons - Sticky bottom */}
+      <div className="border-t border-border bg-background p-4">
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={!isValid}
+            className="flex-1 bg-gradient-elegant text-white hover:bg-gradient-elegant/90"
+          >
+            Confirmar gravação
+          </Button>
         </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="flex-1"
-        >
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={!isValid}
-          className="flex-1 bg-gradient-elegant text-white hover:bg-gradient-elegant/90"
-        >
-          Confirmar gravação
-        </Button>
       </div>
     </div>
   );

@@ -7,9 +7,10 @@ interface EngravingPreviewProps {
   text: string;
   font: FontValue;
   selectedSymbols?: SelectedSymbol[];
+  onSymbolRemove?: (symbolId: string) => void;
 }
 
-export function EngravingPreview({ text, font, selectedSymbols = [] }: EngravingPreviewProps) {
+export function EngravingPreview({ text, font, selectedSymbols = [], onSymbolRemove }: EngravingPreviewProps) {
   const { fontOptions } = useFonts();
   const [symbols, setSymbols] = useState<EngravingSymbol[]>([]);
   
@@ -56,40 +57,79 @@ export function EngravingPreview({ text, font, selectedSymbols = [] }: Engraving
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 min-h-[120px] flex items-center justify-center">
-      <div className="text-center space-y-2">
-        <p className="text-sm text-muted-foreground mb-3">Visualização:</p>
-        
-        {text || selectedSymbols.length > 0 ? (
-          <div className="flex flex-col items-center gap-2">
-            {/* Símbolos acima */}
-            {renderSymbols('above')}
-            
-            {/* Linha principal com texto e símbolos laterais */}
-            <div className="flex items-center gap-2">
-              {/* Símbolos à esquerda */}
-              {renderSymbols('left')}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-foreground">
+          Pré-visualização:
+        </label>
+        {selectedSymbols.length > 0 && (
+          <div className="flex gap-1">
+            {selectedSymbols.map((selected) => {
+              const symbol = symbols.find(s => s.id === selected.symbolId);
+              if (!symbol) return null;
               
-              {/* Texto principal */}
-              {text && (
-                <div 
-                  className={`text-foreground transition-all duration-300 ${fontConfig?.className || 'font-sans'}`}
+              return (
+                <div
+                  key={selected.symbolId}
+                  className="flex items-center gap-1 bg-secondary px-1.5 py-0.5 rounded text-xs"
                 >
-                  {text}
+                  <span>{symbol.unicode_char}</span>
+                  <span className="text-[10px]">
+                    {selected.position === 'left' ? '←' : 
+                     selected.position === 'right' ? '→' : 
+                     selected.position === 'above' ? '↑' : '↓'}
+                  </span>
+                  {onSymbolRemove && (
+                    <button
+                      className="hover:text-destructive"
+                      onClick={() => onSymbolRemove(selected.symbolId)}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
-              )}
-              
-              {/* Símbolos à direita */}
-              {renderSymbols('right')}
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      <div className="border border-border rounded-lg p-4 bg-background min-h-[80px] flex items-center justify-center">
+        {(text || selectedSymbols.length > 0) ? (
+          <div className="flex flex-col items-center space-y-1">
+            {/* Symbols above */}
+            <div className="flex items-center space-x-1">
+              {renderSymbols('above')}
             </div>
             
-            {/* Símbolos abaixo */}
-            {renderSymbols('below')}
+            <div className="flex items-center space-x-1">
+              {/* Symbols left */}
+              <div className="flex items-center space-x-1">
+                {renderSymbols('left')}
+              </div>
+              
+              {/* Main text */}
+              {text && (
+                <span className={`${fontConfig?.className || 'font-sans'} text-lg text-foreground`}>
+                  {text}
+                </span>
+              )}
+              
+              {/* Symbols right */}
+              <div className="flex items-center space-x-1">
+                {renderSymbols('right')}
+              </div>
+            </div>
+            
+            {/* Symbols below */}
+            <div className="flex items-center space-x-1">
+              {renderSymbols('below')}
+            </div>
           </div>
         ) : (
-          <div className="text-muted-foreground/60 italic">
-            Digite o texto ou selecione símbolos para ver a prévia
-          </div>
+          <p className="text-muted-foreground text-sm">
+            Digite um texto ou escolha símbolos para ver a pré-visualização
+          </p>
         )}
       </div>
     </div>

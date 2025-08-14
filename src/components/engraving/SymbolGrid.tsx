@@ -45,8 +45,8 @@ export function SymbolGrid({ symbols, selectedSymbols, onSymbolSelect, onSymbolR
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-6 gap-2">
+    <div className="space-y-3">
+      <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto">
         {symbols.map((symbol) => {
           const isSelected = isSymbolSelected(symbol.id);
           const position = getSymbolPosition(symbol.id);
@@ -54,13 +54,13 @@ export function SymbolGrid({ symbols, selectedSymbols, onSymbolSelect, onSymbolR
           return (
             <div
               key={symbol.id}
-              className={`relative group cursor-pointer p-3 border rounded-lg transition-all hover:border-primary ${
+              className={`relative group cursor-pointer p-2 border rounded-md transition-all hover:border-primary ${
                 isSelected ? 'border-primary bg-primary/10' : 'border-border'
               }`}
               onClick={() => handleSymbolClick(symbol)}
             >
-              <div className="text-2xl text-center">{symbol.unicode_char}</div>
-              <div className="text-xs text-center text-muted-foreground mt-1 truncate">
+              <div className="text-xl text-center">{symbol.unicode_char}</div>
+              <div className="text-[10px] text-center text-muted-foreground mt-0.5 truncate">
                 {symbol.name}
               </div>
               
@@ -83,39 +83,6 @@ export function SymbolGrid({ symbols, selectedSymbols, onSymbolSelect, onSymbolR
         })}
       </div>
 
-      {selectedSymbols.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Símbolos Selecionados:</h4>
-          <div className="flex flex-wrap gap-2">
-            {selectedSymbols.map((selected) => {
-              const symbol = symbols.find(s => s.id === selected.symbolId);
-              if (!symbol) return null;
-              
-              return (
-                <div
-                  key={selected.symbolId}
-                  className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm"
-                >
-                  <span>{symbol.unicode_char}</span>
-                  <span className="text-xs">
-                    ({selected.position === 'left' ? 'Esquerda' : 
-                      selected.position === 'right' ? 'Direita' : 
-                      selected.position === 'above' ? 'Acima' : 'Abaixo'})
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-4 w-4 p-0"
-                    onClick={() => onSymbolRemove(selected.symbolId)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <Dialog open={positionDialogOpen} onOpenChange={setPositionDialogOpen}>
         <DialogContent className="sm:max-w-md">
