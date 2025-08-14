@@ -1435,6 +1435,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_delete_product: {
+        Args: { product_id: string }
+        Returns: boolean
+      }
+      delete_product_cascade: {
+        Args: { product_id: string }
+        Returns: boolean
+      }
       generate_order_number: {
         Args: Record<PropertyKey, never>
         Returns: string
