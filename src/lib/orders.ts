@@ -45,6 +45,9 @@ export async function createOrder(orderData: CreateOrderData): Promise<Order> {
       discount: orderData.discount,
       total: orderData.total,
       delivery_method: orderData.delivery_method,
+      payment_method: orderData.payment_method,
+      installments: orderData.installments,
+      installment_value: orderData.installment_value,
       notes: orderData.notes
     })
     .select()

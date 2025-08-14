@@ -11,6 +11,9 @@ export interface Order {
   total: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   delivery_method: 'pickup' | 'delivery';
+  payment_method?: 'pix' | 'credit_card' | 'debit_card' | 'cash';
+  installments?: number;
+  installment_value?: number;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -44,6 +47,9 @@ export interface CreateOrderData {
   discount: number;
   total: number;
   delivery_method: 'pickup' | 'delivery';
+  payment_method: 'pix' | 'credit_card' | 'debit_card' | 'cash';
+  installments?: number;
+  installment_value?: number;
   notes?: string;
   items: CreateOrderItemData[];
 }

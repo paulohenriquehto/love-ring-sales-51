@@ -378,8 +378,11 @@ export type Database = {
           delivery_method: string
           discount: number
           id: string
+          installment_value: number | null
+          installments: number | null
           notes: string | null
           order_number: string | null
+          payment_method: string | null
           status: string
           subtotal: number
           total: number
@@ -395,8 +398,11 @@ export type Database = {
           delivery_method?: string
           discount?: number
           id?: string
+          installment_value?: number | null
+          installments?: number | null
           notes?: string | null
           order_number?: string | null
+          payment_method?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -412,8 +418,11 @@ export type Database = {
           delivery_method?: string
           discount?: number
           id?: string
+          installment_value?: number | null
+          installments?: number | null
           notes?: string | null
           order_number?: string | null
+          payment_method?: string | null
           status?: string
           subtotal?: number
           total?: number

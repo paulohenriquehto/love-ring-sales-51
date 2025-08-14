@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
@@ -13,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { createOrder } from '@/lib/orders';
 import { EngravingDisplay } from '@/components/engraving/EngravingDisplay';
-import { ShoppingBag, CreditCard, User, MapPin, MessageSquare } from 'lucide-react';
+import { ShoppingBag, CreditCard, User, MapPin, MessageSquare, Banknote, Smartphone } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const Checkout = () => {
@@ -31,14 +32,17 @@ const Checkout = () => {
 
   const [orderData, setOrderData] = useState({
     deliveryMethod: 'pickup' as 'pickup' | 'delivery',
+    paymentMethod: 'pix' as 'pix' | 'credit_card' | 'debit_card' | 'cash',
+    installments: 1,
     notes: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
   const subtotal = getTotalPrice();
-  const pixDiscount = subtotal * 0.05;
-  const pixTotal = subtotal - pixDiscount;
+  const pixDiscount = orderData.paymentMethod === 'pix' ? subtotal * 0.05 : 0;
+  const total = subtotal - pixDiscount;
+  const installmentValue = orderData.paymentMethod === 'credit_card' ? total / orderData.installments : 0;
 
   const handleInputChange = (field: string, value: string) => {
     setCustomerData(prev => ({ ...prev, [field]: value }));
@@ -81,6 +85,15 @@ const Checkout = () => {
       return false;
     }
 
+    if (!orderData.paymentMethod) {
+      toast({
+        title: "Erro",
+        description: "Forma de pagamento é obrigatória",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -107,8 +120,11 @@ const Checkout = () => {
         customer_phone: customerData.phone,
         subtotal,
         discount: pixDiscount,
-        total: subtotal,
+        total,
         delivery_method: orderData.deliveryMethod,
+        payment_method: orderData.paymentMethod,
+        installments: orderData.paymentMethod === 'credit_card' ? orderData.installments : undefined,
+        installment_value: orderData.paymentMethod === 'credit_card' ? installmentValue : undefined,
         notes: orderData.notes || null,
         items: items.map(item => ({
           product_id: item.id,
@@ -269,6 +285,94 @@ const Checkout = () => {
                   </div>
                 </div>
               </Card>
+
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Forma de Pagamento</h2>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label>Método de Pagamento *</Label>
+                    <RadioGroup
+                      value={orderData.paymentMethod}
+                      onValueChange={(value: 'pix' | 'credit_card' | 'debit_card' | 'cash') =>
+                        setOrderData(prev => ({ ...prev, paymentMethod: value, installments: value === 'credit_card' ? prev.installments : 1 }))
+                      }
+                      className="mt-2"
+                    >
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="pix" id="pix" />
+                        <Label htmlFor="pix" className="flex-1 flex items-center gap-3 cursor-pointer">
+                          <Smartphone className="h-4 w-4 text-green-600" />
+                          <div>
+                            <div className="font-medium">PIX</div>
+                            <div className="text-sm text-green-600">5% de desconto</div>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="credit_card" id="credit_card" />
+                        <Label htmlFor="credit_card" className="flex-1 flex items-center gap-3 cursor-pointer">
+                          <CreditCard className="h-4 w-4 text-blue-600" />
+                          <div>
+                            <div className="font-medium">Cartão de Crédito</div>
+                            <div className="text-sm text-muted-foreground">Parcelamento disponível</div>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="debit_card" id="debit_card" />
+                        <Label htmlFor="debit_card" className="flex-1 flex items-center gap-3 cursor-pointer">
+                          <CreditCard className="h-4 w-4 text-purple-600" />
+                          <div>
+                            <div className="font-medium">Cartão de Débito</div>
+                            <div className="text-sm text-muted-foreground">À vista</div>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <RadioGroupItem value="cash" id="cash" />
+                        <Label htmlFor="cash" className="flex-1 flex items-center gap-3 cursor-pointer">
+                          <Banknote className="h-4 w-4 text-green-700" />
+                          <div>
+                            <div className="font-medium">Dinheiro</div>
+                            <div className="text-sm text-muted-foreground">Pagamento em espécie</div>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {orderData.paymentMethod === 'credit_card' && (
+                    <div>
+                      <Label htmlFor="installments">Parcelas</Label>
+                      <Select
+                        value={orderData.installments.toString()}
+                        onValueChange={(value) =>
+                          setOrderData(prev => ({ ...prev, installments: parseInt(value) }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num}x de R$ {(total / num).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              {num === 1 ? ' (à vista)' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
 
             {/* Order Summary */}
@@ -325,24 +429,36 @@ const Checkout = () => {
                     <span>R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-green-800">PIX (5% desconto):</span>
-                      <span className="font-bold text-green-800">
-                        R$ {pixTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+                  {pixDiscount > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-green-800">Desconto PIX (5%):</span>
+                        <span className="font-bold text-green-800">
+                          -R$ {pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-green-600 mt-1">
-                      Economia de R$ {pixDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
+                  )}
+
+                  {orderData.paymentMethod === 'credit_card' && orderData.installments > 1 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-blue-800">
+                          Parcelamento {orderData.installments}x:
+                        </span>
+                        <span className="font-medium text-blue-800">
+                          R$ {installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   <Separator />
 
                   <div className="flex justify-between items-center text-lg font-bold">
                     <span>Total:</span>
                     <span className="text-primary">
-                      R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
