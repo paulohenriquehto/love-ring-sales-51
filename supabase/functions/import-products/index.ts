@@ -75,46 +75,97 @@ async function processImport(
   const errorLog: any[] = [];
   const successLog: any[] = [];
   let processedCount = 0;
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 second
 
   try {
-    // Process products in batches of 10
-    const batchSize = 10;
+    // Optimized batch size based on data volume
+    const batchSize = csvData.rows.length > 500 ? 25 : csvData.rows.length > 100 ? 15 : 10;
     const totalBatches = Math.ceil(csvData.rows.length / batchSize);
+
+    console.log(`Starting optimized import: ${csvData.rows.length} products in ${totalBatches} batches of ${batchSize}`);
 
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
       const startIndex = batchIndex * batchSize;
       const endIndex = Math.min(startIndex + batchSize, csvData.rows.length);
       const batch = csvData.rows.slice(startIndex, endIndex);
 
-      console.log(`Processing batch ${batchIndex + 1}/${totalBatches}`);
+      console.log(`Processing batch ${batchIndex + 1}/${totalBatches} (${batch.length} products)`);
 
-      // Process each product in the batch
-      for (let i = 0; i < batch.length; i++) {
-        const rowIndex = startIndex + i;
-        const row = batch[i];
+      // Process batch with retry logic
+      let batchSuccess = false;
+      let retryCount = 0;
 
+      while (!batchSuccess && retryCount < maxRetries) {
         try {
-          await processProduct(supabase, csvData.headers, row, config, rowIndex, successLog, errorLog);
-          processedCount++;
-        } catch (error) {
-          console.error(`Error processing row ${rowIndex}:`, error);
-          errorLog.push({
-            row: rowIndex + 2, // +2 because row 1 is headers and arrays are 0-indexed
-            product: getProductName(csvData.headers, row, config.mapping),
-            error: 'Erro no processamento',
-            details: error.message,
+          // Process each product in the batch with parallel processing for non-conflicting operations
+          const batchPromises = batch.map(async (row, i) => {
+            const rowIndex = startIndex + i;
+            try {
+              await processProduct(supabase, csvData.headers, row, config, rowIndex, successLog, errorLog);
+              return { success: true, rowIndex };
+            } catch (error) {
+              console.error(`Error processing row ${rowIndex}:`, error);
+              errorLog.push({
+                row: rowIndex + 2,
+                product: getProductName(csvData.headers, row, config.mapping),
+                error: 'Erro no processamento',
+                details: error.message,
+                retry_attempt: retryCount + 1,
+              });
+              return { success: false, rowIndex };
+            }
           });
-          processedCount++;
-        }
 
-        // Update progress every 5 products
-        if (processedCount % 5 === 0) {
-          await updateProgress(supabase, importId, processedCount, successLog.length, errorLog.length, csvData.totalRows, errorLog, successLog);
+          const results = await Promise.allSettled(batchPromises);
+          processedCount += results.length;
+          batchSuccess = true;
+
+          // Update progress more frequently for better UX
+          if (processedCount % 3 === 0 || batchIndex === totalBatches - 1) {
+            await updateProgress(supabase, importId, processedCount, successLog.length, errorLog.length, csvData.totalRows, errorLog, successLog);
+          }
+
+        } catch (batchError) {
+          retryCount++;
+          console.error(`Batch ${batchIndex + 1} failed (attempt ${retryCount}):`, batchError);
+          
+          if (retryCount < maxRetries) {
+            console.log(`Retrying batch ${batchIndex + 1} in ${retryDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay * retryCount));
+          } else {
+            // Mark all products in batch as failed
+            batch.forEach((row, i) => {
+              const rowIndex = startIndex + i;
+              errorLog.push({
+                row: rowIndex + 2,
+                product: getProductName(csvData.headers, row, config.mapping),
+                error: 'Falha no lote após múltiplas tentativas',
+                details: batchError.message,
+                retry_attempt: retryCount,
+              });
+            });
+            processedCount += batch.length;
+            batchSuccess = true; // Continue to next batch
+          }
         }
       }
 
-      // Small delay between batches to prevent overwhelming the database
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Adaptive delay between batches based on performance
+      const delayTime = csvData.rows.length > 1000 ? 200 : csvData.rows.length > 500 ? 150 : 100;
+      await new Promise(resolve => setTimeout(resolve, delayTime));
+
+      // Check for cancellation every batch
+      const { data: currentStatus } = await supabase
+        .from('import_logs')
+        .select('status')
+        .eq('id', importId)
+        .single();
+
+      if (currentStatus?.status === 'cancelled') {
+        console.log('Import cancelled by user');
+        return;
+      }
     }
 
     // Final update
