@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { EngravingPreview } from "./EngravingPreview";
 import { FontSelector } from "./FontSelector";
-import { type EngravingCustomization, type EngravingConfig, type FontValue } from "@/types/engraving";
+import { SymbolSelector } from "./SymbolSelector";
+import { type EngravingCustomization, type EngravingConfig, type FontValue, type SelectedSymbol, type EngravingSymbol } from "@/types/engraving";
 
 interface EngravingCustomizerProps {
   config: EngravingConfig;
@@ -23,20 +25,37 @@ export function EngravingCustomizer({
 }: EngravingCustomizerProps) {
   const [text, setText] = useState("");
   const [font, setFont] = useState<FontValue>("arial");
+  const [selectedSymbols, setSelectedSymbols] = useState<SelectedSymbol[]>([]);
+
+  const handleSymbolSelect = (symbol: EngravingSymbol, position: 'left' | 'right' | 'above' | 'below') => {
+    setSelectedSymbols(prev => [
+      ...prev,
+      { symbolId: symbol.id, position }
+    ]);
+  };
+
+  const handleSymbolRemove = (symbolId: string) => {
+    setSelectedSymbols(prev => prev.filter(s => s.symbolId !== symbolId));
+  };
 
   const handleConfirm = () => {
-    if (!text.trim()) return;
+    if (!text.trim() && selectedSymbols.length === 0) return;
     
     onConfirm({
       text: text.trim(),
       font,
       productId,
-      variantId
+      variantId,
+      selectedSymbols
     });
   };
 
-  const remainingChars = config.max_characters - text.length;
-  const isTextValid = text.length > 0 && text.length <= config.max_characters;
+  const getTotalCharacters = () => {
+    return text.length + selectedSymbols.length * 2; // Count symbols as 2 chars each
+  };
+
+  const remainingChars = config.max_characters - getTotalCharacters();
+  const isValid = (text.length > 0 || selectedSymbols.length > 0) && remainingChars >= 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -65,12 +84,12 @@ export function EngravingCustomizer({
           />
           <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground">
-              Aqui somente até {config.max_characters} caracteres
+              Máximo {config.max_characters} caracteres (símbolos contam como 2 cada)
             </span>
             <span className={`font-medium ${
-              remainingChars < 5 ? 'text-destructive' : 'text-muted-foreground'
+              remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
             }`}>
-              {remainingChars} restantes
+              {getTotalCharacters()}/{config.max_characters}
             </span>
           </div>
         </div>
@@ -83,8 +102,23 @@ export function EngravingCustomizer({
         availableFonts={config.available_fonts}
       />
 
+      <Separator />
+
+      {/* Symbol Selection */}
+      <SymbolSelector
+        selectedSymbols={selectedSymbols}
+        onSymbolSelect={handleSymbolSelect}
+        onSymbolRemove={handleSymbolRemove}
+      />
+
+      <Separator />
+
       {/* Preview */}
-      <EngravingPreview text={text} font={font} />
+      <EngravingPreview 
+        text={text} 
+        font={font} 
+        selectedSymbols={selectedSymbols}
+      />
 
       {/* Price Info */}
       {config.price_adjustment > 0 && (
@@ -109,7 +143,7 @@ export function EngravingCustomizer({
         </Button>
         <Button
           onClick={handleConfirm}
-          disabled={!isTextValid}
+          disabled={!isValid}
           className="flex-1 bg-gradient-elegant text-white hover:bg-gradient-elegant/90"
         >
           Confirmar gravação

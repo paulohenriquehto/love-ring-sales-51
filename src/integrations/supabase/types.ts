@@ -118,6 +118,80 @@ export type Database = {
         }
         Relationships: []
       }
+      engraving_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      engraving_symbols: {
+        Row: {
+          active: boolean
+          category_id: string
+          created_at: string
+          icon_path: string | null
+          id: string
+          name: string
+          price_adjustment: number | null
+          unicode_char: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category_id: string
+          created_at?: string
+          icon_path?: string | null
+          id?: string
+          name: string
+          price_adjustment?: number | null
+          unicode_char?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category_id?: string
+          created_at?: string
+          icon_path?: string | null
+          id?: string
+          name?: string
+          price_adjustment?: number | null
+          unicode_char?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engraving_symbols_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "engraving_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
           created_at: string

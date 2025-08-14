@@ -1,8 +1,29 @@
+export interface EngravingSymbol {
+  id: string;
+  name: string;
+  category_id: string;
+  unicode_char: string;
+  price_adjustment: number;
+}
+
+export interface EngravingCategory {
+  id: string;
+  name: string;
+  icon: string;
+  sort_order: number;
+}
+
+export interface SelectedSymbol {
+  symbolId: string;
+  position: 'left' | 'right' | 'above' | 'below';
+}
+
 export interface EngravingCustomization {
   text: string;
   font: string;
   productId: string;
   variantId?: string;
+  selectedSymbols?: SelectedSymbol[];
 }
 
 export interface EngravingConfig {
