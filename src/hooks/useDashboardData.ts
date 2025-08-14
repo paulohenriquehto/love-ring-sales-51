@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type RequestWithProfile = {
@@ -10,8 +10,15 @@ type RequestWithProfile = {
 };
 
 export const useDashboardData = () => {
+  const queryClient = useQueryClient();
+
+  // Função para invalidar todas as queries do dashboard
+  const refreshDashboard = () => {
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  };
+
   // Requisições pendentes
-  const { data: pendingRequests = 0, error: pendingError } = useQuery({
+  const { data: pendingRequests = 0, error: pendingError, isLoading: loadingPending } = useQuery({
     queryKey: ['dashboard-pending-requests'],
     queryFn: async () => {
       try {
@@ -32,11 +39,12 @@ export const useDashboardData = () => {
       }
     },
     retry: 1,
-    staleTime: 30000, // 30 seconds
+    staleTime: 0, // Força refresh imediato
+    gcTime: 0, // Remove cache persistente
   });
 
   // Departamentos ativos
-  const { data: activeDepartments = 0, error: departmentsError } = useQuery({
+  const { data: activeDepartments = 0, error: departmentsError, isLoading: loadingDepartments } = useQuery({
     queryKey: ['dashboard-active-departments'],
     queryFn: async () => {
       try {
@@ -57,11 +65,12 @@ export const useDashboardData = () => {
       }
     },
     retry: 1,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Usuários ativos
-  const { data: activeUsers = 0, error: usersError } = useQuery({
+  const { data: activeUsers = 0, error: usersError, isLoading: loadingUsers } = useQuery({
     queryKey: ['dashboard-active-users'],
     queryFn: async () => {
       try {
@@ -82,11 +91,12 @@ export const useDashboardData = () => {
       }
     },
     retry: 1,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Gastos do mês atual
-  const { data: monthlyExpenses = 0, error: expensesError } = useQuery({
+  const { data: monthlyExpenses = 0, error: expensesError, isLoading: loadingExpenses } = useQuery({
     queryKey: ['dashboard-monthly-expenses'],
     queryFn: async () => {
       try {
@@ -114,11 +124,12 @@ export const useDashboardData = () => {
       }
     },
     retry: 1,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Requisições recentes
-  const { data: recentRequests = [], error: recentError } = useQuery<RequestWithProfile[]>({
+  const { data: recentRequests = [], error: recentError, isLoading: loadingRecent } = useQuery<RequestWithProfile[]>({
     queryKey: ['dashboard-recent-requests'],
     queryFn: async () => {
       try {
@@ -182,7 +193,8 @@ export const useDashboardData = () => {
       }
     },
     retry: 1,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Log errors for debugging
@@ -192,11 +204,16 @@ export const useDashboardData = () => {
   if (expensesError) console.error('Expenses error:', expensesError);
   if (recentError) console.error('Recent requests error:', recentError);
 
+  // Estado de loading geral
+  const isLoading = loadingPending || loadingDepartments || loadingUsers || loadingExpenses || loadingRecent;
+
   return {
     pendingRequests,
     activeDepartments,
     activeUsers,
     monthlyExpenses,
     recentRequests,
+    refreshDashboard,
+    isLoading,
   };
 };

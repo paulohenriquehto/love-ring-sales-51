@@ -5,12 +5,31 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Building2, ShoppingCart, BarChart3, LogOut, Plus } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, Building2, ShoppingCart, BarChart3, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { pendingRequests, activeDepartments, activeUsers, monthlyExpenses, recentRequests } = useDashboardData();
+  const { toast } = useToast();
+  const { 
+    pendingRequests, 
+    activeDepartments, 
+    activeUsers, 
+    monthlyExpenses, 
+    recentRequests,
+    refreshDashboard,
+    isLoading
+  } = useDashboardData();
+
+  const handleRefresh = () => {
+    refreshDashboard();
+    toast({
+      title: "Dados atualizados",
+      description: "Dashboard atualizado com os dados mais recentes",
+    });
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -81,6 +100,15 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Gestão de recursos corporativos</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              onClick={handleRefresh} 
+              size="sm"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
             <div className="text-right">
               <p className="font-medium text-foreground">{profile?.full_name}</p>
               <div className="flex items-center gap-2">
