@@ -28,7 +28,6 @@ import ImportStatusBadge from '@/components/import/ImportStatusBadge';
 import ExportReports from '@/components/import/ExportReports';
 import ImportTemplates from '@/components/import/ImportTemplates';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface ImportLog {
   id: string;
@@ -349,7 +348,7 @@ const ImportDashboard = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(imp.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      {format(new Date(imp.created_at), 'dd/MM/yyyy HH:mm')}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm">
