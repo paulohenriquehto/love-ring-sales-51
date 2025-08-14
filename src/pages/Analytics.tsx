@@ -1,526 +1,340 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useAnalyticsData, DateRange } from '@/hooks/useAnalyticsData';
+import { exportAnalyticsToCSV } from '@/lib/exportUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { 
-  BarChart3, 
   TrendingUp, 
-  Users, 
-  Package, 
+  TrendingDown, 
+  Download, 
   DollarSign, 
-  ShoppingCart,
-  Clock,
-  Target,
-  Zap,
-  Activity,
-  FileText,
-  Download,
-  RefreshCw,
-  Calendar
+  ShoppingCart, 
+  Users, 
+  Package,
+  Loader2
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { DateRange } from 'react-day-picker';
+import { format, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
-interface AnalyticsMetrics {
-  totalRevenue: number;
-  totalOrders: number;
-  totalProducts: number;
-  totalUsers: number;
-  avgOrderValue: number;
-  conversionRate: number;
-  monthlyGrowth: number;
-  topSellingProducts: Array<{
-    name: string;
-    sales: number;
-    revenue: number;
-  }>;
-  salesByDepartment: Array<{
-    department: string;
-    sales: number;
-    target: number;
-  }>;
-  userActivity: Array<{
-    date: string;
-    orders: number;
-    revenue: number;
-  }>;
-}
-
-interface KPIConfig {
-  id: string;
-  title: string;
-  value: string | number;
-  change: number;
-  trend: 'up' | 'down' | 'stable';
-  icon: React.ComponentType<any>;
-  color: string;
-}
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))'];
 
 const Analytics = () => {
-  const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date())
   });
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [refreshing, setRefreshing] = useState(false);
-  const { toast } = useToast();
-  const { profile } = useAuth();
+  const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [dateRange, selectedDepartment]);
+  const { salesMetrics, topProducts, dailySales, previousMetrics, isLoading } = useAnalyticsData(dateRange);
 
-  const loadAnalytics = async () => {
+  const handleExport = async () => {
+    setIsExporting(true);
     try {
-      setLoading(true);
-      
-      // Load real analytics from database
-      const { data: metricsData } = await supabase
-        .from('analytics_metrics')
-        .select('*')
-        .eq('date', new Date().toISOString().split('T')[0]);
-
-      const { data: topProducts } = await supabase
-        .from('top_selling_products')
-        .select('*, products(name)')
-        .order('total_revenue', { ascending: false })
-        .limit(5);
-
-      const getMetric = (type: string) => metricsData?.find(m => m.metric_type === type)?.value || 0;
-
-      const realMetrics: AnalyticsMetrics = {
-        totalRevenue: getMetric('total_revenue'),
-        totalOrders: getMetric('total_orders'),
-        totalProducts: getMetric('total_products'),
-        totalUsers: getMetric('total_users') || 89,
-        avgOrderValue: getMetric('average_order_value'),
-        conversionRate: getMetric('conversion_rate'),
-        monthlyGrowth: getMetric('monthly_growth'),
-        topSellingProducts: topProducts?.map(p => ({
-          name: p.products.name,
-          sales: p.total_quantity,
-          revenue: p.total_revenue
-        })) || [],
-        salesByDepartment: [
-          { department: 'Joias', sales: 156, target: 150 },
-          { department: 'Relógios', sales: 89, target: 100 },
-          { department: 'Acessórios', sales: 134, target: 120 },
-          { department: 'Bijuterias', sales: 78, target: 80 }
-        ],
-        userActivity: Array.from({ length: 30 }, (_, i) => ({
-          date: format(subDays(new Date(), 29 - i), 'dd/MM'),
-          orders: Math.floor(Math.random() * 50) + 10,
-          revenue: Math.floor(Math.random() * 5000) + 1000
-        }))
-      };
-
-      setMetrics(realMetrics);
+      await exportAnalyticsToCSV(dateRange);
+      toast.success('Relatório exportado com sucesso!');
     } catch (error) {
-      console.error('Error loading analytics:', error);
-      toast({
-        title: "Erro ao carregar analytics",
-        description: "Não foi possível carregar os dados de análise",
-        variant: "destructive",
-      });
+      toast.error('Erro ao exportar relatório');
+      console.error(error);
     } finally {
-      setLoading(false);
+      setIsExporting(false);
     }
   };
 
-  const refreshAnalytics = async () => {
-    setRefreshing(true);
-    await loadAnalytics();
-    setRefreshing(false);
-    toast({
-      title: "Dados atualizados",
-      description: "Os dados de analytics foram atualizados com sucesso",
-    });
+  const handlePeriodSelect = (period: string) => {
+    const now = new Date();
+    let from: Date, to: Date;
+
+    switch (period) {
+      case 'today':
+        from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        break;
+      case 'week':
+        from = startOfWeek(now, { locale: ptBR });
+        to = endOfWeek(now, { locale: ptBR });
+        break;
+      case 'month':
+        from = startOfMonth(now);
+        to = endOfMonth(now);
+        break;
+      case 'last-month':
+        from = startOfMonth(subMonths(now, 1));
+        to = endOfMonth(subMonths(now, 1));
+        break;
+      case 'year':
+        from = startOfYear(now);
+        to = endOfYear(now);
+        break;
+      default:
+        return;
+    }
+
+    setDateRange({ from, to });
   };
 
-  const exportReport = async () => {
-    try {
-      // Generate CSV report
-      const csvData = metrics?.topSellingProducts.map(product => 
-        `${product.name},${product.sales},${product.revenue.toFixed(2)}`
-      ).join('\n');
-      
-      const csvContent = `Produto,Vendas,Receita\n${csvData}`;
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `analytics-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Relatório exportado",
-        description: "O relatório foi gerado e baixado com sucesso",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao exportar",
-        description: "Não foi possível gerar o relatório",
-        variant: "destructive",
-      });
-    }
+  const calculateGrowth = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
   };
 
-  const kpiCards: KPIConfig[] = metrics ? [
-    {
-      id: 'revenue',
-      title: 'Receita Total',
-      value: `R$ ${metrics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      change: metrics.monthlyGrowth,
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-green-600'
-    },
-    {
-      id: 'orders',
-      title: 'Pedidos',
-      value: metrics.totalOrders.toLocaleString('pt-BR'),
-      change: 12.3,
-      trend: 'up',
-      icon: ShoppingCart,
-      color: 'text-blue-600'
-    },
-    {
-      id: 'products',
-      title: 'Produtos',
-      value: metrics.totalProducts.toLocaleString('pt-BR'),
-      change: 5.7,
-      trend: 'up',
-      icon: Package,
-      color: 'text-purple-600'
-    },
-    {
-      id: 'users',
-      title: 'Usuários Ativos',
-      value: metrics.totalUsers.toLocaleString('pt-BR'),
-      change: 8.9,
-      trend: 'up',
-      icon: Users,
-      color: 'text-orange-600'
-    },
-    {
-      id: 'avgOrder',
-      title: 'Ticket Médio',
-      value: `R$ ${metrics.avgOrderValue.toFixed(2)}`,
-      change: 15.2,
-      trend: 'up',
-      icon: Target,
-      color: 'text-teal-600'
-    },
-    {
-      id: 'conversion',
-      title: 'Taxa Conversão',
-      value: `${metrics.conversionRate}%`,
-      change: 3.1,
-      trend: 'up',
-      icon: Zap,
-      color: 'text-indigo-600'
-    }
-  ] : [];
+  const revenueGrowth = previousMetrics ? calculateGrowth(salesMetrics?.totalRevenue || 0, previousMetrics.totalRevenue) : 0;
+  const ordersGrowth = previousMetrics ? calculateGrowth(salesMetrics?.totalOrders || 0, previousMetrics.totalOrders) : 0;
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <BarChart3 className="w-12 h-12 animate-pulse mx-auto mb-4 text-primary" />
-            <p className="text-lg font-medium">Carregando analytics...</p>
-            <p className="text-sm text-muted-foreground">Analisando dados empresariais</p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando analytics...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-start">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Analytics Empresarial</h1>
-          <p className="text-muted-foreground mt-2">
-            Insights avançados e métricas de performance do negócio
+          <h1 className="text-3xl font-bold">Analytics</h1>
+          <p className="text-muted-foreground">
+            Período: {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} - {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
           </p>
         </div>
-        <div className="flex gap-3">
-          <DatePickerWithRange 
-            value={dateRange} 
-            onChange={setDateRange}
-          />
-          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filtrar departamento" />
+        <div className="flex gap-2">
+          <Select onValueChange={handlePeriodSelect}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os departamentos</SelectItem>
-              <SelectItem value="joias">Joias</SelectItem>
-              <SelectItem value="relogios">Relógios</SelectItem>
-              <SelectItem value="acessorios">Acessórios</SelectItem>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="week">Esta Semana</SelectItem>
+              <SelectItem value="month">Este Mês</SelectItem>
+              <SelectItem value="last-month">Mês Passado</SelectItem>
+              <SelectItem value="year">Este Ano</SelectItem>
             </SelectContent>
           </Select>
           <Button 
-            variant="outline" 
-            onClick={refreshAnalytics}
-            disabled={refreshing}
-            className="flex items-center gap-2"
+            onClick={handleExport} 
+            disabled={isExporting}
+            variant="outline"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Button onClick={exportReport} className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
             Exportar
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {kpiCards.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={kpi.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                    <p className="text-2xl font-bold">{kpi.value}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <TrendingUp className={`w-3 h-3 ${kpi.color}`} />
-                      <span className={`text-sm font-medium ${kpi.color}`}>
-                        +{kpi.change}%
-                      </span>
-                    </div>
-                  </div>
-                  <Icon className={`w-8 h-8 ${kpi.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Métricas Principais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {(salesMetrics?.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground flex items-center">
+              {revenueGrowth >= 0 ? (
+                <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
+              )}
+              {Math.abs(revenueGrowth).toFixed(1)}% vs período anterior
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{salesMetrics?.totalOrders || 0}</div>
+            <p className="text-xs text-muted-foreground flex items-center">
+              {ordersGrowth >= 0 ? (
+                <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              ) : (
+                <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
+              )}
+              {Math.abs(ordersGrowth).toFixed(1)}% vs período anterior
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {(salesMetrics?.avgOrderValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Por pedido
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{(salesMetrics?.conversionRate || 0).toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              Pedidos finalizados
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Analytics Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="sales">Vendas</TabsTrigger>
           <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="trends">Tendências</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Selling Products */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Produtos Mais Vendidos
-                </CardTitle>
-                <CardDescription>
-                  Top 5 produtos por volume de vendas
-                </CardDescription>
+                <CardTitle>Vendas Diárias</CardTitle>
+                <CardDescription>Receita por dia no período selecionado</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {metrics?.topSellingProducts.map((product, index) => (
-                    <div key={product.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">
-                          {index + 1}
-                        </Badge>
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {product.sales} vendas
-                          </p>
-                        </div>
-                      </div>
-                      <p className="font-medium text-green-600">
-                        R$ {product.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={dailySales}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(value) => format(new Date(value), 'dd/MM', { locale: ptBR })}
+                    />
+                    <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Tooltip 
+                      formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Receita']}
+                      labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy', { locale: ptBR })}
+                    />
+                    <Bar dataKey="revenue" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Sales by Department */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Performance por Departamento
-                </CardTitle>
-                <CardDescription>
-                  Vendas vs. metas departamentais
-                </CardDescription>
+                <CardTitle>Top 5 Produtos</CardTitle>
+                <CardDescription>Produtos mais vendidos por receita</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {metrics?.salesByDepartment.map((dept) => {
-                    const percentage = (dept.sales / dept.target) * 100;
-                    return (
-                      <div key={dept.department} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{dept.department}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {dept.sales}/{dept.target}
-                          </span>
+                  {topProducts?.map((product, index) => (
+                    <div key={product.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
+                          {index + 1}
                         </div>
-                        <Progress value={percentage} className="h-2" />
-                        <p className="text-xs text-muted-foreground">
-                          {percentage.toFixed(1)}% da meta atingida
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.totalQuantity} unidades</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">
+                          R$ {product.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
+                  {(!topProducts || topProducts.length === 0) && (
+                    <div className="text-center text-muted-foreground py-8">
+                      Nenhuma venda encontrada no período
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="sales" className="space-y-6">
+        <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Tendências de Vendas
-              </CardTitle>
-              <CardDescription>
-                Análise temporal de vendas e receita
-              </CardDescription>
+              <CardTitle>Análise Detalhada de Produtos</CardTitle>
+              <CardDescription>Performance de vendas por produto</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-2" />
-                  <p>Gráfico de vendas seria renderizado aqui</p>
-                  <p className="text-sm">Integração com biblioteca de gráficos</p>
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={topProducts?.map((product, index) => ({
+                      name: product.name,
+                      value: product.totalRevenue,
+                      fill: COLORS[index % COLORS.length]
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={(entry) => `${entry.name}: R$ ${entry.value.toLocaleString('pt-BR')}`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {topProducts?.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                </PieChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="products" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Análise de Estoque</CardTitle>
-                <CardDescription>
-                  Status do estoque por categoria
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Estoque Total</span>
-                    <Badge variant="secondary">{metrics?.totalProducts} itens</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Baixo Estoque</span>
-                    <Badge variant="destructive">23 itens</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Sem Estoque</span>
-                    <Badge variant="outline">5 itens</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Rotatividade de Produtos</CardTitle>
-                <CardDescription>
-                  Análise de giro de estoque
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Giro Médio</span>
-                    <span className="font-medium">4.2x/mês</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Produtos Parados</span>
-                    <span className="text-orange-600 font-medium">12 itens</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Sazonalidade</span>
-                    <span className="text-green-600 font-medium">Alta</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Tempo Médio de Processamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">2.4h</p>
-                  <p className="text-sm text-muted-foreground">Melhoria de 65%</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Taxa de Erro
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">0.8%</p>
-                  <p className="text-sm text-muted-foreground">Dentro da meta</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Satisfação do Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-purple-600">94.5%</p>
-                  <p className="text-sm text-muted-foreground">+2.3% este mês</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="trends" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tendência de Pedidos</CardTitle>
+              <CardDescription>Número de pedidos por dia</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailySales}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date"
+                    tickFormatter={(value) => format(new Date(value), 'dd/MM', { locale: ptBR })}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [value, 'Pedidos']}
+                    labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy', { locale: ptBR })}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="orders" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
