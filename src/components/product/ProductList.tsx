@@ -95,25 +95,26 @@ const ProductList: React.FC<ProductListProps> = ({ onEditProduct, onProductDelet
 
   const handleDeleteProduct = async (product: any) => {
     try {
-      // Desativar produto (soft delete)
-      const { error: productError } = await supabase
-        .from('products')
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('id', product.id);
+      // Usar função de exclusão física em cascata
+      const { error } = await supabase.rpc('delete_product_cascade', {
+        product_id: product.id
+      });
 
-      if (productError) throw productError;
-
-      // Desativar todas as variantes do produto
-      const { error: variantError } = await supabase
-        .from('product_variants')
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('product_id', product.id);
-
-      if (variantError) throw variantError;
+      if (error) {
+        if (error.message.includes('exists in order history')) {
+          toast({
+            variant: "destructive",
+            title: "Não é possível excluir",
+            description: "Este produto está presente no histórico de pedidos e não pode ser excluído permanentemente.",
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast({
-        title: "Produto excluído",
-        description: `${product.name} foi removido com sucesso.`,
+        title: "Produto excluído permanentemente",
+        description: `${product.name} e todos os dados relacionados foram removidos do sistema.`,
       });
 
       // Recarregar a lista de produtos
@@ -269,17 +270,29 @@ const ProductList: React.FC<ProductListProps> = ({ onEditProduct, onProductDelet
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                        <AlertDialogTitle>⚠️ Exclusão Permanente</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir o produto <strong>{product.name}</strong>?
-                          <br />
-                          <br />
-                          <span className="text-xs text-muted-foreground">
-                            SKU: {product.sku} • {getVariantCount(product)} variante{getVariantCount(product) !== 1 ? 's' : ''}
-                          </span>
-                          <br />
-                          <br />
-                          O produto será desativado mas mantido no histórico de pedidos. Esta ação pode ser revertida posteriormente.
+                          <div className="space-y-3">
+                            <p>
+                              Tem certeza que deseja <strong>excluir permanentemente</strong> o produto <strong>{product.name}</strong>?
+                            </p>
+                            
+                            <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                              <strong>SKU:</strong> {product.sku} • <strong>{getVariantCount(product)} variante{getVariantCount(product) !== 1 ? 's' : ''}</strong>
+                            </div>
+                            
+                            <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-md">
+                              <p className="text-sm font-medium text-destructive">
+                                ⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!
+                              </p>
+                              <ul className="text-xs text-muted-foreground mt-2 space-y-1">
+                                <li>• O produto será removido permanentemente do banco de dados</li>
+                                <li>• Todas as imagens, variantes e configurações serão excluídas</li>
+                                <li>• Esta ação não pode ser desfeita</li>
+                                <li>• Produtos em pedidos existentes não podem ser excluídos</li>
+                              </ul>
+                            </div>
+                          </div>
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -288,7 +301,7 @@ const ProductList: React.FC<ProductListProps> = ({ onEditProduct, onProductDelet
                           onClick={() => handleDeleteProduct(product)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Excluir Produto
+                          Excluir Permanentemente
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
