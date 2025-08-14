@@ -12,15 +12,53 @@ type RequestWithProfile = {
 export const useDashboardData = () => {
   const queryClient = useQueryClient();
 
-  // Função para invalidar todas as queries do dashboard
-  const refreshDashboard = () => {
+  // Função para invalidar TODAS as queries do dashboard com limpeza completa
+  const refreshDashboard = async () => {
+    console.log('🔄 INICIANDO REFRESH COMPLETO DO DASHBOARD...');
+    
+    // Limpeza TOTAL do cache
+    await queryClient.clear();
+    console.log('🗑️ Cache React Query completamente limpo');
+    
+    // Invalidar queries específicas do dashboard
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-pending-requests'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-active-departments'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-active-users'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-monthly-expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-recent-requests'] });
+    
+    console.log('♻️ Todas as queries invalidadas - forçando refetch...');
+  };
+
+  // Hard refresh que limpa TUDO e recarrega a página
+  const hardRefresh = () => {
+    console.log('🚨 HARD REFRESH ATIVADO - Limpando tudo...');
+    
+    // Limpar caches do navegador
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    // Limpar storage local
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Recarregar página
+    window.location.reload();
   };
 
   // Requisições pendentes
   const { data: pendingRequests = 0, error: pendingError, isLoading: loadingPending } = useQuery({
-    queryKey: ['dashboard-pending-requests'],
+    queryKey: ['dashboard-pending-requests', Date.now()], // Cache busting com timestamp
     queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`📊 [${timestamp}] Executando query: Requisições Pendentes`);
+      
       try {
         const { count, error } = await supabase
           .from('requests')
@@ -28,25 +66,32 @@ export const useDashboardData = () => {
           .eq('status', 'pending_approval');
         
         if (error) {
-          console.error('Error fetching pending requests:', error);
+          console.error('❌ Error fetching pending requests:', error);
           return 0;
         }
         
+        console.log(`✅ [${timestamp}] Requisições Pendentes retornado:`, count);
         return count || 0;
       } catch (error) {
-        console.error('Error in pending requests query:', error);
+        console.error('❌ Error in pending requests query:', error);
         return 0;
       }
     },
-    retry: 1,
+    retry: 3,
     staleTime: 0, // Força refresh imediato
     gcTime: 0, // Remove cache persistente
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Refetch a cada 30 segundos
   });
 
   // Departamentos ativos
   const { data: activeDepartments = 0, error: departmentsError, isLoading: loadingDepartments } = useQuery({
-    queryKey: ['dashboard-active-departments'],
+    queryKey: ['dashboard-active-departments', Date.now()],
     queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`🏢 [${timestamp}] Executando query: Departamentos Ativos`);
+      
       try {
         const { count, error } = await supabase
           .from('departments')
@@ -54,25 +99,32 @@ export const useDashboardData = () => {
           .eq('active', true);
         
         if (error) {
-          console.error('Error fetching departments:', error);
+          console.error('❌ Error fetching departments:', error);
           return 0;
         }
         
+        console.log(`✅ [${timestamp}] Departamentos Ativos retornado:`, count);
         return count || 0;
       } catch (error) {
-        console.error('Error in departments query:', error);
+        console.error('❌ Error in departments query:', error);
         return 0;
       }
     },
-    retry: 1,
+    retry: 3,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   // Usuários ativos
   const { data: activeUsers = 0, error: usersError, isLoading: loadingUsers } = useQuery({
-    queryKey: ['dashboard-active-users'],
+    queryKey: ['dashboard-active-users', Date.now()],
     queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`👥 [${timestamp}] Executando query: Usuários Ativos`);
+      
       try {
         const { count, error } = await supabase
           .from('profiles')
@@ -80,25 +132,32 @@ export const useDashboardData = () => {
           .eq('active', true);
         
         if (error) {
-          console.error('Error fetching users:', error);
+          console.error('❌ Error fetching users:', error);
           return 0;
         }
         
+        console.log(`✅ [${timestamp}] Usuários Ativos retornado:`, count);
         return count || 0;
       } catch (error) {
-        console.error('Error in users query:', error);
+        console.error('❌ Error in users query:', error);
         return 0;
       }
     },
-    retry: 1,
+    retry: 3,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   // Gastos do mês atual
   const { data: monthlyExpenses = 0, error: expensesError, isLoading: loadingExpenses } = useQuery({
-    queryKey: ['dashboard-monthly-expenses'],
+    queryKey: ['dashboard-monthly-expenses', Date.now()],
     queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`💰 [${timestamp}] Executando query: Gastos Mensais`);
+      
       try {
         const currentDate = new Date();
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -112,26 +171,33 @@ export const useDashboardData = () => {
           .in('status', ['approved', 'completed']);
 
         if (error) {
-          console.error('Error fetching expenses:', error);
+          console.error('❌ Error fetching expenses:', error);
           return 0;
         }
 
         const total = data?.reduce((sum, request) => sum + (request.total_amount || 0), 0) || 0;
+        console.log(`✅ [${timestamp}] Gastos Mensais retornado:`, total);
         return total;
       } catch (error) {
-        console.error('Error in expenses query:', error);
+        console.error('❌ Error in expenses query:', error);
         return 0;
       }
     },
-    retry: 1,
+    retry: 3,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   // Requisições recentes
   const { data: recentRequests = [], error: recentError, isLoading: loadingRecent } = useQuery<RequestWithProfile[]>({
-    queryKey: ['dashboard-recent-requests'],
+    queryKey: ['dashboard-recent-requests', Date.now()],
     queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`📋 [${timestamp}] Executando query: Requisições Recentes`);
+      
       try {
         const { data, error } = await supabase
           .from('requests')
@@ -146,7 +212,7 @@ export const useDashboardData = () => {
           .limit(3);
 
         if (error) {
-          console.error('Error fetching recent requests:', error);
+          console.error('❌ Error fetching recent requests:', error);
           return [];
         }
 
@@ -186,15 +252,19 @@ export const useDashboardData = () => {
           })
         );
         
+        console.log(`✅ [${timestamp}] Requisições Recentes retornado:`, requestsWithUsers.length, 'items');
         return requestsWithUsers as RequestWithProfile[];
       } catch (error) {
-        console.error('Error in recent requests query:', error);
+        console.error('❌ Error in recent requests query:', error);
         return [];
       }
     },
-    retry: 1,
+    retry: 3,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   // Log errors for debugging
@@ -214,6 +284,7 @@ export const useDashboardData = () => {
     monthlyExpenses,
     recentRequests,
     refreshDashboard,
+    hardRefresh,
     isLoading,
   };
 };

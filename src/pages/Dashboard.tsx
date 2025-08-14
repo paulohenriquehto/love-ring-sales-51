@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Building2, ShoppingCart, BarChart3, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { Users, Building2, ShoppingCart, BarChart3, LogOut, Plus, RefreshCw, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
@@ -20,15 +20,30 @@ const Dashboard = () => {
     monthlyExpenses, 
     recentRequests,
     refreshDashboard,
+    hardRefresh,
     isLoading
   } = useDashboardData();
 
-  const handleRefresh = () => {
-    refreshDashboard();
+  const handleRefresh = async () => {
+    console.log('🔄 Usuário solicitou refresh do dashboard');
+    await refreshDashboard();
     toast({
       title: "Dados atualizados",
       description: "Dashboard atualizado com os dados mais recentes",
     });
+  };
+
+  const handleHardRefresh = () => {
+    console.log('🚨 Usuário solicitou HARD REFRESH');
+    toast({
+      title: "Reiniciando aplicação",
+      description: "Limpando cache e recarregando...",
+      variant: "destructive"
+    });
+    
+    setTimeout(() => {
+      hardRefresh();
+    }, 1000);
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -99,7 +114,7 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold text-foreground">Sistema de Comércio Interno</h1>
             <p className="text-muted-foreground">Gestão de recursos corporativos</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               onClick={handleRefresh} 
@@ -108,6 +123,15 @@ const Dashboard = () => {
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleHardRefresh} 
+              size="sm"
+              disabled={isLoading}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Hard Refresh
             </Button>
             <div className="text-right">
               <p className="font-medium text-foreground">{profile?.full_name}</p>
