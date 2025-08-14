@@ -21,6 +21,7 @@ import Products from "./pages/Products.tsx";
 import Checkout from "./pages/Checkout.tsx";
 import OrderConfirmation from "./pages/OrderConfirmation.tsx";
 import ImportProducts from "./pages/ImportProducts.tsx";
+import ImportDashboard from "./pages/ImportDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -41,6 +42,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/departments" element={<AppLayout><Departments /></AppLayout>} />
               <Route path="/products" element={<AppLayout><Products /></AppLayout>} />
               <Route path="/import-products" element={<AppLayout><ImportProducts /></AppLayout>} />
+              <Route path="/import-dashboard" element={<AppLayout><ImportDashboard /></AppLayout>} />
               <Route path="/checkout" element={<AppLayout><Checkout /></AppLayout>} />
               <Route path="/order-confirmation/:orderId" element={<AppLayout><OrderConfirmation /></AppLayout>} />
               <Route path="*" element={<NotFound />} />

@@ -44,6 +44,7 @@ const mainItems = [
 const managementItems = [
   { title: "Produtos", url: "/products", icon: Package, roles: ["admin", "manager"] },
   { title: "Importar Produtos", url: "/import-products", icon: Upload, roles: ["admin", "manager"] },
+  { title: "Dashboard Importações", url: "/import-dashboard", icon: BarChart3, roles: ["admin", "manager"] },
   { title: "Departamentos", url: "/departments", icon: Building2, roles: ["admin", "manager"] },
   { title: "Usuários", url: "/users", icon: Users, roles: ["admin"] },
   { title: "Relatórios", url: "/reports", icon: BarChart3, roles: ["admin", "manager"] },
