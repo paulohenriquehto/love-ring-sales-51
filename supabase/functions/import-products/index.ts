@@ -44,8 +44,10 @@ serve(async (req) => {
       .update({ status: 'processing' })
       .eq('id', importId);
 
-    // Start background processing
-    EdgeRuntime.waitUntil(processImport(supabase, importId, csvData, config));
+    // Start background processing with proper async handling
+    processImport(supabase, importId, csvData, config).catch(error => {
+      console.error('Background import process failed:', error);
+    });
 
     return new Response(
       JSON.stringify({ success: true, importId }),
@@ -136,22 +138,29 @@ async function processImport(
   } catch (error) {
     console.error('Import failed:', error);
     
-    await supabase
-      .from('import_logs')
-      .update({ 
-        status: 'failed',
-        processed_products: processedCount,
-        success_count: successLog.length,
-        error_count: errorLog.length,
-        error_log: [...errorLog, {
-          row: 'N/A',
-          product: 'Sistema',
-          error: 'Falha geral na importação',
-          details: error.message,
-        }],
-        success_log: successLog
-      })
-      .eq('id', importId);
+    const systemError = {
+      row: 'Sistema',
+      product: 'Falha Geral',
+      error: 'Erro crítico na importação',
+      details: error instanceof Error ? error.message : 'Erro desconhecido',
+      timestamp: new Date().toISOString(),
+    };
+    
+    try {
+      await supabase
+        .from('import_logs')
+        .update({ 
+          status: 'failed',
+          processed_products: processedCount,
+          success_count: successLog.length,
+          error_count: errorLog.length + 1,
+          error_log: [...errorLog, systemError],
+          success_log: successLog
+        })
+        .eq('id', importId);
+    } catch (updateError) {
+      console.error('Failed to update import status after error:', updateError);
+    }
   }
 }
 
@@ -166,40 +175,73 @@ async function processProduct(
 ) {
   const mapping = config.mapping;
   
-  // Extract mapped values
+  // Validate input data
+  if (!headers || !Array.isArray(headers)) {
+    throw new Error('Headers inválidos');
+  }
+  
+  if (!row || !Array.isArray(row)) {
+    throw new Error('Dados da linha inválidos');
+  }
+  
+  // Extract mapped values with validation
   const productData: any = {};
   headers.forEach((header, index) => {
     const mappedField = mapping[header];
     if (mappedField && mappedField !== 'ignore') {
-      productData[mappedField] = row[index]?.trim() || null;
+      const value = row[index];
+      productData[mappedField] = (value && typeof value === 'string') ? value.trim() : null;
     }
   });
 
-  // Validate required fields
-  if (!productData.name) {
-    throw new Error('Nome do produto é obrigatório');
+  // Validate required fields with detailed messages
+  if (!productData.name || productData.name === '') {
+    throw new Error('Nome do produto é obrigatório e não pode estar vazio');
   }
 
-  if (!productData.base_price) {
-    throw new Error('Preço base é obrigatório');
+  if (!productData.base_price || productData.base_price === '') {
+    throw new Error('Preço base é obrigatório e não pode estar vazio');
   }
 
-  // Parse numeric fields
+  // Validate name length
+  if (productData.name.length > 255) {
+    throw new Error('Nome do produto deve ter no máximo 255 caracteres');
+  }
+
+  // Parse and validate numeric fields
   if (productData.base_price) {
-    const price = parseFloat(productData.base_price.replace(/[^0-9.,]/g, '').replace(',', '.'));
-    if (isNaN(price)) {
-      throw new Error('Preço inválido');
+    // Clean price string and convert to number
+    const cleanPrice = productData.base_price.replace(/[^0-9.,]/g, '').replace(',', '.');
+    const price = parseFloat(cleanPrice);
+    
+    if (isNaN(price) || price < 0) {
+      throw new Error(`Preço inválido: "${productData.base_price}". Use formato numérico válido (ex: 10.50)`);
     }
+    
+    if (price > 999999.99) {
+      throw new Error('Preço deve ser menor que R$ 999.999,99');
+    }
+    
     productData.base_price = price;
   }
 
   if (productData.weight) {
-    const weight = parseFloat(productData.weight.replace(',', '.'));
-    if (!isNaN(weight)) {
+    const cleanWeight = productData.weight.toString().replace(',', '.');
+    const weight = parseFloat(cleanWeight);
+    
+    if (!isNaN(weight) && weight >= 0) {
+      if (weight > 9999.99) {
+        throw new Error('Peso deve ser menor que 9999.99 kg');
+      }
       productData.weight = weight;
     } else {
       delete productData.weight;
     }
+  }
+
+  // Validate SKU format if provided
+  if (productData.sku && productData.sku.length > 100) {
+    throw new Error('SKU deve ter no máximo 100 caracteres');
   }
 
   // Handle category

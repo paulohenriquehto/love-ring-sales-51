@@ -113,6 +113,9 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ csvData, config, onImpo
   };
 
   const pollImportStatus = async (importId: string) => {
+    let retryCount = 0;
+    const maxRetries = 3;
+    
     const interval = setInterval(async () => {
       if (isPaused) return;
 
@@ -123,7 +126,23 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ csvData, config, onImpo
           .eq('id', importId)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            clearInterval(interval);
+            addLog('error', `Falha ao verificar status após ${maxRetries} tentativas`);
+            toast({
+              title: "Erro de conexão",
+              description: "Não foi possível verificar o status da importação",
+              variant: "destructive",
+            });
+            return;
+          }
+          throw error;
+        }
+
+        // Reset retry count on success
+        retryCount = 0;
 
         setImportStatus({
           id: data.id,
@@ -159,9 +178,13 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ csvData, config, onImpo
             description: "Verifique os logs para mais detalhes.",
             variant: "destructive",
           });
+        } else if (data.status === 'cancelled') {
+          clearInterval(interval);
+          addLog('warning', 'Importação cancelada');
         }
       } catch (error) {
         console.error('Erro ao verificar status:', error);
+        addLog('warning', `Erro temporário ao verificar status (tentativa ${retryCount}/${maxRetries})`);
       }
     }, 2000); // Poll every 2 seconds
 
