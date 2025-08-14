@@ -214,7 +214,7 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
                         text={item.engraving_text || ""}
                         font={item.engraving_font || "arial"}
                         selectedSymbols={parseEngravingSymbols(item.engraving_symbols)}
-                        compact={true}
+                        compact={false}
                         showTitle={true}
                       />
                     </div>
