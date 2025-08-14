@@ -13,6 +13,7 @@ import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import DepartmentManager from "./components/DepartmentManager";
+import ImportProducts from "./pages/ImportProducts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Settings />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/import-products" 
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ImportProducts />
                   </AppLayout>
                 </ProtectedRoute>
               } 

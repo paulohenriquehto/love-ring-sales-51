@@ -192,6 +192,54 @@ export type Database = {
           },
         ]
       }
+      import_logs: {
+        Row: {
+          created_at: string
+          error_count: number
+          error_log: Json | null
+          filename: string
+          id: string
+          mapping_config: Json | null
+          processed_products: number
+          status: string
+          success_count: number
+          success_log: Json | null
+          total_products: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number
+          error_log?: Json | null
+          filename: string
+          id?: string
+          mapping_config?: Json | null
+          processed_products?: number
+          status?: string
+          success_count?: number
+          success_log?: Json | null
+          total_products?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_count?: number
+          error_log?: Json | null
+          filename?: string
+          id?: string
+          mapping_config?: Json | null
+          processed_products?: number
+          status?: string
+          success_count?: number
+          success_log?: Json | null
+          total_products?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           created_at: string
