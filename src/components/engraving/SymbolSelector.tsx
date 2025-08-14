@@ -79,13 +79,13 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
   }
 
   const renderSymbolGrid = (categorySymbols: EngravingSymbol[]) => (
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
       {categorySymbols.map(symbol => (
         <button
           key={symbol.id}
           type="button"
           onClick={() => handleSymbolToggle(symbol.id)}
-          className={`relative p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+          className={`relative p-2 rounded-lg border-2 transition-all hover:scale-105 ${
             selectedSymbols.includes(symbol.id)
               ? 'border-primary bg-primary/10'
               : 'border-border hover:border-primary/50'
@@ -95,10 +95,11 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
           <img
             src={symbol.image_url || ''}
             alt={symbol.name}
-            className="w-10 h-10 object-contain mx-auto"
+            className="w-8 h-8 object-contain mx-auto"
+            loading="lazy"
           />
           {selectedSymbols.includes(symbol.id) && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
               <span className="text-xs text-primary-foreground font-bold">✓</span>
             </div>
           )}
@@ -158,7 +159,7 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
 
       {/* Abas por categorias */}
       <Tabs defaultValue={categories[0]?.id || ""} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           {categories.map(category => (
             <TabsTrigger key={category.id} value={category.id} className="text-xs">
               {category.name}
@@ -171,9 +172,14 @@ export function SymbolSelector({ selectedSymbols, onChange }: SymbolSelectorProp
           
           return (
             <TabsContent key={category.id} value={category.id} className="mt-4">
-              <div className="max-h-80 overflow-y-auto">
+              <div className="max-h-96 overflow-y-auto">
                 {categorySymbols.length > 0 ? (
-                  renderSymbolGrid(categorySymbols)
+                  <>
+                    <div className="text-xs text-muted-foreground mb-3 text-center">
+                      {categorySymbols.length} símbolos disponíveis
+                    </div>
+                    {renderSymbolGrid(categorySymbols)}
+                  </>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     {searchTerm ? 'Nenhum símbolo encontrado' : 'Nenhum símbolo disponível'}
