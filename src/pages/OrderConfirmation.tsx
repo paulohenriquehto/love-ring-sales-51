@@ -264,7 +264,6 @@ const OrderConfirmation = () => {
                           <EngravingDisplay
                             text={item.engraving_text}
                             font={item.engraving_font || 'arial'}
-                            selectedSymbols={item.engraving_symbols ? JSON.parse(item.engraving_symbols) : undefined}
                             compact={true}
                             showTitle={false}
                           />

@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User, Phone, Mail, MapPin, Package, FileText, Printer, Edit3, CreditCard, Zap, Banknote } from 'lucide-react';
 import { EngravingDisplay } from '@/components/engraving/EngravingDisplay';
-import type { SelectedSymbol } from '@/types/engraving';
+// Importações de tipos simplificadas para MVP
 
 interface OrderDetailsProps {
   order: Order | null;
@@ -39,21 +39,7 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
     return statusMap[status as keyof typeof statusMap] || status;
   };
 
-  // Parse engraving symbols from JSON string to SelectedSymbol[]
-  const parseEngravingSymbols = (symbolsJson?: string): SelectedSymbol[] => {
-    if (!symbolsJson) return [];
-    try {
-      const parsed = JSON.parse(symbolsJson);
-      // Handle both array of objects and direct objects
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-      return [];
-    } catch (error) {
-      console.error('Error parsing engraving symbols:', error);
-      return [];
-    }
-  };
+  // Removido parseEngravingSymbols - não usado no MVP simplificado
 
   const getPaymentMethodIcon = (method?: string) => {
     switch (method) {
@@ -263,7 +249,6 @@ export function OrderDetails({ order, isOpen, onClose }: OrderDetailsProps) {
                       <EngravingDisplay
                         text={item.engraving_text || ""}
                         font={item.engraving_font || "arial"}
-                        selectedSymbols={parseEngravingSymbols(item.engraving_symbols)}
                         compact={false}
                         showTitle={true}
                       />

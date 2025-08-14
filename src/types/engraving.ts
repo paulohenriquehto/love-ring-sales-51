@@ -1,35 +1,10 @@
-export interface EngravingSymbol {
-  id: string;
-  name: string;
-  category_id: string;
-  unicode_char: string;
-  price_adjustment: number;
-  image_url?: string;
-  svg_content?: string;
-  active?: boolean;
-}
-
-export interface EngravingCategory {
-  id: string;
-  name: string;
-  icon: string;
-  sort_order: number;
-  description?: string;
-  image_url?: string;
-  active?: boolean;
-}
-
-export interface SelectedSymbol {
-  symbolId: string;
-  position: 'left' | 'right' | 'above' | 'below';
-}
+// Tipos simplificados para MVP - apenas texto e fontes
 
 export interface EngravingCustomization {
   text: string;
   font: string;
   productId: string;
   variantId?: string;
-  selectedSymbols?: SelectedSymbol[];
 }
 
 export interface EngravingConfig {

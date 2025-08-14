@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { EngravingPreview } from "./EngravingPreview";
 import { FontSelector } from "./FontSelector";
-import { SymbolSelector } from "./SymbolSelector";
-import { type EngravingCustomization, type EngravingConfig, type FontValue, type SelectedSymbol, type EngravingSymbol } from "@/types/engraving";
+import { type EngravingCustomization, type EngravingConfig, type FontValue } from "@/types/engraving";
 
 interface EngravingCustomizerProps {
   config: EngravingConfig;
@@ -27,37 +26,19 @@ export function EngravingCustomizer({
 }: EngravingCustomizerProps) {
   const [text, setText] = useState(existingCustomization?.text || "");
   const [font, setFont] = useState<FontValue>(existingCustomization?.font || "arial");
-  const [selectedSymbols, setSelectedSymbols] = useState<SelectedSymbol[]>(existingCustomization?.selectedSymbols || []);
-
-  const handleSymbolSelect = (symbol: EngravingSymbol, position: 'left' | 'right' | 'above' | 'below') => {
-    setSelectedSymbols(prev => [
-      ...prev,
-      { symbolId: symbol.id, position }
-    ]);
-  };
-
-  const handleSymbolRemove = (symbolId: string) => {
-    setSelectedSymbols(prev => prev.filter(s => s.symbolId !== symbolId));
-  };
 
   const handleConfirm = () => {
-    if (!text.trim() && selectedSymbols.length === 0) return;
+    if (!text.trim()) return;
     
     onConfirm({
       text: text.trim(),
       font,
       productId,
-      variantId,
-      selectedSymbols
+      variantId
     });
   };
 
-  const getTotalCharacters = () => {
-    return text.length + selectedSymbols.length * 2; // Count symbols as 2 chars each
-  };
-
-  const remainingChars = config.max_characters - getTotalCharacters();
-  const isValid = (text.length > 0 || selectedSymbols.length > 0) && remainingChars >= 0;
+  const isValid = text.length > 0 && text.length <= config.max_characters;
 
   return (
     <div className="max-h-[85vh] overflow-hidden flex flex-col">
@@ -87,12 +68,12 @@ export function EngravingCustomizer({
             />
             <div className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground">
-                Máx. {config.max_characters} chars (símbolos = 2)
+                Máx. {config.max_characters} caracteres
               </span>
               <span className={`font-medium ${
-                remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
+                text.length > config.max_characters ? 'text-destructive' : 'text-muted-foreground'
               }`}>
-                {getTotalCharacters()}/{config.max_characters}
+                {text.length}/{config.max_characters}
               </span>
             </div>
           </div>
@@ -105,19 +86,10 @@ export function EngravingCustomizer({
           availableFonts={config.available_fonts}
         />
 
-        {/* Symbol Selection */}
-        <SymbolSelector
-          selectedSymbols={selectedSymbols}
-          onSymbolSelect={handleSymbolSelect}
-          onSymbolRemove={handleSymbolRemove}
-        />
-
         {/* Preview */}
         <EngravingPreview 
           text={text} 
           font={font} 
-          selectedSymbols={selectedSymbols}
-          onSymbolRemove={handleSymbolRemove}
         />
 
         {/* Price Info */}

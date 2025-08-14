@@ -89,7 +89,6 @@ export function Cart({ isOpen, onClose }: CartProps) {
                           <EngravingDisplay
                             text={item.engraving.text}
                             font={item.engraving.font}
-                            selectedSymbols={item.engraving.selectedSymbols || []}
                             compact={true}
                             showTitle={true}
                           />

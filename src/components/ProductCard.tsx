@@ -209,21 +209,9 @@ export function ProductCard({ product, engravingConfig }: ProductCardProps) {
             <EngravingDisplay
               text={pendingEngraving.text}
               font={pendingEngraving.font}
-              selectedSymbols={pendingEngraving.selectedSymbols}
               compact={true}
               showTitle={true}
             />
-            {pendingEngraving.selectedSymbols && pendingEngraving.selectedSymbols.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1 justify-center">
-                {pendingEngraving.selectedSymbols.map((selected, index) => (
-                  <span key={index} className="text-xs bg-secondary px-1.5 py-0.5 rounded">
-                    {selected.position === 'left' ? '← emoji' : 
-                     selected.position === 'right' ? 'emoji →' : 
-                     selected.position === 'above' ? '↑ emoji' : 'emoji ↓'}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         )}
 

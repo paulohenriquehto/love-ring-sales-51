@@ -137,7 +137,7 @@ const Checkout = () => {
           total_price: item.price * item.quantity,
           engraving_text: item.engraving?.text,
           engraving_font: item.engraving?.font,
-          engraving_symbols: item.engraving?.selectedSymbols ? JSON.stringify(item.engraving.selectedSymbols) : null
+          engraving_symbols: null // Removido no MVP - apenas texto
         }))
       };
 
@@ -403,7 +403,6 @@ const Checkout = () => {
                             <EngravingDisplay
                               text={item.engraving.text}
                               font={item.engraving.font}
-                              selectedSymbols={item.engraving.selectedSymbols}
                               compact={true}
                               showTitle={false}
                             />
