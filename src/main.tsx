@@ -25,30 +25,30 @@ import NotFound from "./pages/NotFound.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <FontProvider>
+    <Router>
       <AuthProvider>
-        <CartProvider>
-          <Router>
-          <Routes>
-            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-            <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
-            <Route path="/users" element={<AppLayout><Users /></AppLayout>} />
-            <Route path="/reports" element={<AppLayout><Reports /></AppLayout>} />
-            <Route path="/requests" element={<AppLayout><Requests /></AppLayout>} />
-            <Route path="/inventory" element={<AppLayout><Inventory /></AppLayout>} />
-            <Route path="/departments" element={<AppLayout><Departments /></AppLayout>} />
-            <Route path="/products" element={<AppLayout><Products /></AppLayout>} />
-            <Route path="/import-products" element={<AppLayout><ImportProducts /></AppLayout>} />
-            <Route path="/checkout" element={<AppLayout><Checkout /></AppLayout>} />
-            <Route path="/order-confirmation/:orderId" element={<AppLayout><OrderConfirmation /></AppLayout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
-        </CartProvider>
+        <FontProvider>
+          <CartProvider>
+            <Routes>
+              <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+              <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+              <Route path="/users" element={<AppLayout><Users /></AppLayout>} />
+              <Route path="/reports" element={<AppLayout><Reports /></AppLayout>} />
+              <Route path="/requests" element={<AppLayout><Requests /></AppLayout>} />
+              <Route path="/inventory" element={<AppLayout><Inventory /></AppLayout>} />
+              <Route path="/departments" element={<AppLayout><Departments /></AppLayout>} />
+              <Route path="/products" element={<AppLayout><Products /></AppLayout>} />
+              <Route path="/import-products" element={<AppLayout><ImportProducts /></AppLayout>} />
+              <Route path="/checkout" element={<AppLayout><Checkout /></AppLayout>} />
+              <Route path="/order-confirmation/:orderId" element={<AppLayout><OrderConfirmation /></AppLayout>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </CartProvider>
+        </FontProvider>
       </AuthProvider>
-    </FontProvider>
+    </Router>
   </React.StrictMode>
 );
